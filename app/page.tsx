@@ -302,17 +302,17 @@ export default function Component() {
               </RadioGroup>
             </div>
             <Button className="w-full" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? 'Save' : 'Save'}
             </Button>
-            <div className="flex justify-between mb-4">
-              <Button className="w-1/2 mr-2 bg-transparent border border-blue-500 hover:bg-blue-500 hover:text-white rounded py-2 text-blue-500" onClick={() => window.location.href = "https://bit.ly/adexpense-sheets"}>
-                Sheets
-              </Button>
-              <Button className="w-1/2 ml-2 bg-transparent border border-blue-500 hover:bg-blue-500 hover:text-white rounded py-2 text-blue-500" onClick={() => window.location.href = "https://bit.ly/adexpense-dashboards"}>
-                Dashboard
-              </Button>
-            </div>
           </form>
+          <div className="flex justify-between mb-4">
+            <Button type="button" className="w-1/2 mr-2 bg-transparent border border-blue-500 hover:bg-blue-500 hover:text-white rounded py-2 text-blue-500" onClick={() => window.location.href = "https://bit.ly/adexpense-sheets"}>
+              Sheets
+            </Button>
+            <Button type="button" className="w-1/2 ml-2 bg-transparent border border-blue-500 hover:bg-blue-500 hover:text-white rounded py-2 text-blue-500" onClick={() => window.location.href = "https://bit.ly/adexpense-dashboards"}>
+              Dashboard
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
