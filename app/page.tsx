@@ -129,7 +129,7 @@ export default function Component() {
             <Wallet className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold">Expense Tracker</CardTitle>
-          <p className="text-sm text-gray-500">Created by <a href="https://x.com/alhrkn" target="_blank" rel="noopener noreferrer">@alhrkn</a></p>
+          <p className="text-sm text-gray-500">Created by <a href="https://x.com/alhrkn" target="_blank" rel="noopener noreferrer">Al</a> & Diana</p>
           {feedbackMessage && (
             <p className="text-blue-600 font-semibold mt-1">{feedbackMessage}</p>
           )}
