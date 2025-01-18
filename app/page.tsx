@@ -103,7 +103,7 @@ export default function Component() {
       }
     } catch (error) {
       console.error('Error:', error);
-      setFeedbackMessage(`Network Error: ${error.message}`);
+      setFeedbackMessage(`Network Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsSubmitting(false); // Re-enable the button once the request is complete
     }
