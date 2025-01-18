@@ -97,11 +97,13 @@ export default function Component() {
           setFeedbackMessage('');
         }, 3000); // Clear the message after 5 seconds
       } else {
-        console.error('Error submitting data');
-        setFeedbackMessage("Error Submitting Data. Please Try Again.");
+        const errorData = await response.json();
+        console.error('Error submitting data:', errorData);
+        setFeedbackMessage(`Error: ${errorData.error || 'Failed to submit data. Please try again.'}`);
       }
     } catch (error) {
       console.error('Error:', error);
+      setFeedbackMessage(`Network Error: ${error.message}`);
     } finally {
       setIsSubmitting(false); // Re-enable the button once the request is complete
     }
