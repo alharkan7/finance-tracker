@@ -32,13 +32,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Success' }, { status: 200 });
   } catch (error) {
     console.error('Detailed error:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
+      name: error instanceof Error ? error.name : 'Unknown Error',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack trace',
     });
     return NextResponse.json({ 
       message: 'Error submitting data',
-      error: error.message 
+      error: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 }
