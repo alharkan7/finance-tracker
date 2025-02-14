@@ -46,7 +46,7 @@ export default function Component() {
     }
 
     setIsSubmitting(true);
-    setFeedbackMessage('Submitting Expense...');
+    setFeedbackMessage(`Submitting ${activeTab === 'expense' ? 'Expense' : 'Income'}...`);
 
     try {
       // Find the selected category to get its label
