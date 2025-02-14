@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FormExpenses } from './components/form_expenses';
 import { FormIncome } from './components/form_income';
 import { Button } from "@/components/ui/button"
-import { categories } from '@/lib/categories';
+import { categories, categoriesIncome } from '@/lib/categories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -51,7 +51,8 @@ export default function Component() {
 
     try {
       // Find the selected category to get its label
-      const selectedCategory = categories.find(cat => cat.value === categoryValue);
+      const categoryArray = activeTab === 'expense' ? categories : categoriesIncome;
+      const selectedCategory = categoryArray.find(cat => cat.value === categoryValue);
       const description = descriptionValue.trim() || selectedCategory?.label || categoryValue;
 
       const response = await fetch(`/api/submit-${activeTab}`, {
