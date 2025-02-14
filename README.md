@@ -1,4 +1,4 @@
-# Simple Expense Tracker
+# Simple Finance Tracker
 
 A straightforward web application designed to help users record daily expenses effortlessly. This app allows users to log their expenses and automatically saves them to a Google Sheets document for easy tracking and management.
 

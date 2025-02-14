@@ -7,24 +7,7 @@ import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Utensils,
-  ShoppingBag,
-  ShoppingBasket,
-  Baby,
-  Bus,
-  Book,
-  Donut,
-  Tv,
-  Gift,
-  Users,
-  Heart,
-  DollarSign,
-  FileText,
-  Home,
-  MoreHorizontal,
-  ChartArea,
-} from 'lucide-react';
+import { DatePicker } from "@/components/ui/date-picker"
 
 interface FormExpensesProps {
   date: string;
@@ -40,6 +23,7 @@ interface FormExpensesProps {
   reimburseValue: string;
   setReimburseValue: (value: string) => void;
   isSubmitting: boolean;
+  showValidation: boolean;
   handleSubmit: (e: React.FormEvent) => void;
 }
 
@@ -57,15 +41,23 @@ export function FormExpenses({
   reimburseValue,
   setReimburseValue,
   isSubmitting,
+  showValidation,
   handleSubmit,
 }: FormExpensesProps) {
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className="space-y-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-6 rounded-lg bg-white" onSubmit={handleSubmit}>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="subject">Subject</Label>
-          <Select value={subjectValue} required onValueChange={setSubjectValue}>
-            <SelectTrigger id="subject">
+          <Select
+            value={subjectValue}
+            required
+            onValueChange={setSubjectValue}
+          >
+            <SelectTrigger
+              id="subject"
+              className={`border-2 ${showValidation && !subjectValue ? 'border-red-500 focus:ring-red-500' : ''}`}
+            >
               <SelectValue placeholder="Select" />
             </SelectTrigger>
             <SelectContent>
@@ -78,19 +70,13 @@ export function FormExpenses({
               <SelectItem value="Al & Nurin"><b>Al & Nurin</b></SelectItem>
             </SelectContent>
           </Select>
+          {showValidation && !subjectValue && (
+            <p className="text-sm text-red-500 mt-1">Please Select</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="date">Date</Label>
-          <div className="relative">
-            <Input
-              type="date"
-              id="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full"
-              required
-            />
-          </div>
+          <DatePicker date={date} setDate={setDate} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -110,11 +96,18 @@ export function FormExpenses({
         </div>
         <div className="space-y-2">
           <Label htmlFor="category">Category</Label>
-          <Select value={categoryValue} required onValueChange={setCategoryValue}>
-            <SelectTrigger id="category">
+          <Select
+            value={categoryValue}
+            required
+            onValueChange={setCategoryValue}
+          >
+            <SelectTrigger
+              id="category"
+              className={`border-2 ${showValidation && !categoryValue ? 'border-red-500 focus:ring-red-500' : ''}`}
+            >
               <SelectValue placeholder="Select" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               {categories.map((category) => (
                 <SelectItem key={category.value} value={category.value}>
                   <div className="flex items-center">
@@ -125,6 +118,9 @@ export function FormExpenses({
               ))}
             </SelectContent>
           </Select>
+          {showValidation && !categoryValue && (
+            <p className="text-sm text-red-500 mt-1">Please Select</p>
+          )}
         </div>
       </div>
       <div className="space-y-2">
@@ -150,7 +146,7 @@ export function FormExpenses({
           </div>
         </RadioGroup>
       </div>
-      <Button className="w-full" type="submit" disabled={isSubmitting}>
+      <Button className="w-full !mt-6" type="submit" disabled={isSubmitting}>
         {isSubmitting ? 'Save' : 'Save'}
       </Button>
     </form>

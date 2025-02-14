@@ -14,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Expense Tracker",
-  description: "Simple Expense Tracker to Google Sheets",
+  title: "Finance Tracker",
+  description: "Simple Finance Tracker to Google Sheets",
   icons: [
     {
       url: "/wallet.png"

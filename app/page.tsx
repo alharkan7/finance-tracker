@@ -1,9 +1,12 @@
 'use client'
+
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Wallet } from 'lucide-react';
 import { FormExpenses } from './components/form_expenses';
+import { FormIncome } from './components/form_income';
 import { Button } from "@/components/ui/button"
+import { categories } from '@/lib/categories';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Component() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -13,6 +16,9 @@ export default function Component() {
   const [descriptionValue, setDescriptionValue] = useState('');
   const [reimburseValue, setReimburseValue] = useState('FALSE');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [showValidation, setShowValidation] = useState(false);
+  const [activeTab, setActiveTab] = useState('expense');
 
   const timestamp = (() => {
     const date = new Date();
@@ -26,15 +32,28 @@ export default function Component() {
     return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
   })();
 
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowValidation(true);
+
+    // Validate required fields
+    if (!subjectValue || !categoryValue) {
+      // setFeedbackMessage('Please fill in all required fields');
+      setTimeout(() => {
+        setFeedbackMessage('');
+      }, 3000);
+      return;
+    }
+
     setIsSubmitting(true);
-    setFeedbackMessage('Submitting expense...');
+    setFeedbackMessage('Submitting Expense...');
 
     try {
-      const response = await fetch('/api/submit-expense', {
+      // Find the selected category to get its label
+      const selectedCategory = categories.find(cat => cat.value === categoryValue);
+      const description = descriptionValue.trim() || selectedCategory?.label || categoryValue;
+
+      const response = await fetch(`/api/submit-${activeTab}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,13 +64,13 @@ export default function Component() {
           subject: subjectValue,
           amount: parseFloat(amountValue),
           category: categoryValue,
-          description: descriptionValue,
+          description,
           reimbursed: reimburseValue,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit expense');
+        throw new Error(`Failed to submit ${activeTab}`);
       }
 
       // Reset form
@@ -61,7 +80,8 @@ export default function Component() {
       setCategoryValue('');
       setDescriptionValue('');
       setReimburseValue('FALSE');
-      setFeedbackMessage('Expense submitted successfully!');
+      setShowValidation(false);
+      setFeedbackMessage(`${activeTab === 'expense' ? 'Expense' : 'Income'} Submitted Successfully!`);
 
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -69,7 +89,7 @@ export default function Component() {
       }, 3000);
     } catch (error) {
       console.error('Error:', error);
-      setFeedbackMessage('Failed to submit expense. Please try again.');
+      setFeedbackMessage(`Failed to submit ${activeTab}. Please try again.`);
 
       // Clear error message after 3 seconds
       setTimeout(() => {
@@ -84,47 +104,82 @@ export default function Component() {
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white p-4 flex items-center justify-center">
       <Card className="w-full max-w-sm mx-auto">
         <CardHeader className="text-center py-6 items-center">
-          <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          {/* <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Wallet className="w-8 h-8 text-white" />
-          </div>
+          </div> */}
           <CardTitle className="text-2xl font-bold">
-            Expense Tracker
+            Finance Tracker
           </CardTitle>
-          <p className="text-sm text-gray-500">Created by <a href="https://x.com/alhrkn" target="_blank" rel="noopener noreferrer">Al</a> & Diana</p>
+          <p className="text-sm text-gray-500">Created by <a href="https://x.com/alhrkn" target="_blank" rel="noopener noreferrer">Al</a> & <a href="https://instagram.com/diananurindrasari" target="_blank" rel="noopener noreferrer">Diana</a></p>
           {feedbackMessage && (
-            <div className={`mt-4 p-3 text-sm font-medium rounded-md ${
-              feedbackMessage.includes('successfully')
+            <div className={`mt-4 px-3 py-1 text-sm font-medium rounded-md ${feedbackMessage.toLowerCase().includes('successfully')
                 ? 'bg-green-50 text-green-800 border border-green-200'
                 : feedbackMessage.includes('Submitting')
                   ? 'bg-blue-50 text-blue-800 border border-blue-200'
                   : 'bg-red-50 text-red-800 border border-red-200'
-            }`}>
+              }`}>
               {feedbackMessage}
             </div>
           )}
         </CardHeader>
-        <CardContent className="space-y-5">
-          <FormExpenses
-            date={date}
-            setDate={setDate}
-            subjectValue={subjectValue}
-            setSubjectValue={setSubjectValue}
-            amountValue={amountValue}
-            setAmountValue={setAmountValue}
-            categoryValue={categoryValue}
-            setCategoryValue={setCategoryValue}
-            descriptionValue={descriptionValue}
-            setDescriptionValue={setDescriptionValue}
-            reimburseValue={reimburseValue}
-            setReimburseValue={setReimburseValue}
-            isSubmitting={isSubmitting}
-            handleSubmit={handleSubmit}
-          />
-          <div className="flex justify-between mb-4">
-            <Button type="button" className="w-1/2 mr-2 bg-transparent border border-blue-500 hover:bg-blue-500 hover:text-white rounded py-2 text-blue-500" onClick={() => window.location.href = "https://bit.ly/adexpense-sheets"}>
+        <CardContent>
+          <Tabs defaultValue="expense" className="w-full" onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="expense">Expense</TabsTrigger>
+              <TabsTrigger value="income">Income</TabsTrigger>
+            </TabsList>
+            <TabsContent value="expense">
+              <FormExpenses
+                date={date}
+                setDate={setDate}
+                subjectValue={subjectValue}
+                setSubjectValue={setSubjectValue}
+                amountValue={amountValue}
+                setAmountValue={setAmountValue}
+                categoryValue={categoryValue}
+                setCategoryValue={setCategoryValue}
+                descriptionValue={descriptionValue}
+                setDescriptionValue={setDescriptionValue}
+                reimburseValue={reimburseValue}
+                setReimburseValue={setReimburseValue}
+                isSubmitting={isSubmitting}
+                handleSubmit={handleSubmit}
+                showValidation={showValidation}
+              />
+            </TabsContent>
+            <TabsContent value="income">
+              <FormIncome
+                date={date}
+                setDate={setDate}
+                subjectValue={subjectValue}
+                setSubjectValue={setSubjectValue}
+                amountValue={amountValue}
+                setAmountValue={setAmountValue}
+                categoryValue={categoryValue}
+                setCategoryValue={setCategoryValue}
+                descriptionValue={descriptionValue}
+                setDescriptionValue={setDescriptionValue}
+                isSubmitting={isSubmitting}
+                handleSubmit={handleSubmit}
+                showValidation={showValidation}
+              />
+            </TabsContent>
+          </Tabs>
+          <div className="flex justify-between mt-4 gap-4">
+            <Button
+              type="button"
+              className="w-1/2 bg-white shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 text-gray-700 hover:text-primary-foreground rounded-lg py-4 flex items-center justify-center gap-2 font-medium"
+              onClick={() => window.location.href = "https://bit.ly/adexpense-sheets"}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>
               Sheets
             </Button>
-            <Button type="button" className="w-1/2 ml-2 bg-transparent border border-blue-500 hover:bg-blue-500 hover:text-white rounded py-2 text-blue-500" onClick={() => window.location.href = "https://bit.ly/adexpense-dashboards"}>
+            <Button
+              type="button"
+              className="w-1/2 bg-white shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 text-gray-700 hover:text-primary-foreground rounded-lg py-4 flex items-center justify-center gap-2 font-medium"
+              onClick={() => window.location.href = "https://bit.ly/adexpense-dash"}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M21 12H3" /><path d="M12 3v18" /></svg>
               Dashboard
             </Button>
           </div>

@@ -1,5 +1,5 @@
 {
-    "name": "Expense Tracker",
+    "name": "Finance Tracker",
     "short_name": "Tracker",
     "start_url": "/",
     "display": "standalone",

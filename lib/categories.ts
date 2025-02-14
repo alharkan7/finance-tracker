@@ -1,9 +1,9 @@
 import { LucideIcon } from 'lucide-react';
 
 interface Category {
-  value: string;
-  icon: LucideIcon;
-  label: string;
+    value: string;
+    icon: LucideIcon;
+    label: string;
 }
 
 
@@ -24,9 +24,12 @@ import {
     Home,
     MoreHorizontal,
     ChartArea,
-  } from 'lucide-react';
-  
-  export const categories: Category[] = [
+    Dices,
+    Banknote, PenLine, BriefcaseBusiness, Landmark
+} from "lucide-react"
+
+
+export const categories: Category[] = [
     { value: '🍔 Food & Beverages', icon: Utensils, label: 'Food & Beverages' },
     { value: '🥫 Snacks', icon: Donut, label: 'Snacks' },
     { value: '👼🏼 Baby', icon: Baby, label: 'Baby' },
@@ -42,5 +45,13 @@ import {
     { value: '🛍️ Shopping', icon: ShoppingBag, label: 'Shopping' },
     { value: '💰 Investment', icon: ChartArea, label: 'Investment' },
     { value: '🏠 Accommodation', icon: Home, label: 'Accommodation' },
-    { value: '🎲 Others', icon: MoreHorizontal, label: 'Others' },
-  ] as const;
+    { value: '🎲 Others', icon: Dices, label: 'Others' },
+] as const;
+
+export const categoriesIncome: Category[] = [
+    { value: '💰 Salary', icon: Banknote, label: 'Salary' },
+    { value: '✍🏼 Event', icon: PenLine, label: 'Event' },
+    { value: '💼 Business', icon: BriefcaseBusiness, label: 'Business' },
+    { value: '🎁 Gift', icon: Landmark, label: 'Gift' },
+    { value: '🎲 Others', icon: Dices, label: 'Others' },
+]
