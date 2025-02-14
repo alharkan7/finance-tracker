@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { timestamp, subject, date, amount, category, description, reimburse } = body;
+    const { timestamp, subject, date, amount, category, description } = body;
 
     const auth = new google.auth.GoogleAuth({
       credentials: {

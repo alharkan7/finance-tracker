@@ -22,7 +22,6 @@ import {
     DollarSign,
     FileText,
     Home,
-    MoreHorizontal,
     ChartArea,
     Dices,
     Banknote, PenLine, BriefcaseBusiness, Landmark
