@@ -54,4 +54,4 @@ export const categoriesIncome: Category[] = [
     { value: '💼 Business', icon: BriefcaseBusiness, label: 'Business' },
     { value: '🎁 Gift', icon: Landmark, label: 'Gift' },
     { value: '🎲 Others', icon: Dices, label: 'Others' },
-]
+] as const;

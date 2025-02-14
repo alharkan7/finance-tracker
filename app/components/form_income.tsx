@@ -56,8 +56,8 @@ export function FormIncome({
               <SelectValue placeholder="Select" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Al (Personal)">Al</SelectItem>
-              <SelectItem value="Nurin (Personal)">Nurin</SelectItem>
+              <SelectItem value="Al">Al</SelectItem>
+              <SelectItem value="Nurin">Nurin</SelectItem>
             </SelectContent>
           </Select>
           {showValidation && !subjectValue && (

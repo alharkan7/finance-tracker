@@ -7,6 +7,7 @@ import { FormIncome } from './components/form_income';
 import { Button } from "@/components/ui/button"
 import { categories } from '@/lib/categories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Component() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -113,57 +114,89 @@ export default function Component() {
           <p className="text-sm text-gray-500">Created by <a href="https://x.com/alhrkn" target="_blank" rel="noopener noreferrer">Al</a> & <a href="https://instagram.com/diananurindrasari" target="_blank" rel="noopener noreferrer">Diana</a></p>
           {feedbackMessage && (
             <div className={`mt-4 px-3 py-1 text-sm font-medium rounded-md ${feedbackMessage.toLowerCase().includes('successfully')
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : feedbackMessage.includes('Submitting')
-                  ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                  : 'bg-red-50 text-red-800 border border-red-200'
+              ? 'bg-green-50 text-green-800 border border-green-200'
+              : feedbackMessage.includes('Submitting')
+                ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                : 'bg-red-50 text-red-800 border border-red-200'
               }`}>
               {feedbackMessage}
             </div>
           )}
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="expense" className="w-full" onValueChange={setActiveTab}>
+          <Tabs
+            defaultValue="expense"
+            className="w-full"
+            onValueChange={(value) => {
+              setActiveTab(value);
+              // Reset all form values
+              setDate(new Date().toISOString().split('T')[0]);
+              setSubjectValue('');
+              setAmountValue('');
+              setCategoryValue('');
+              setDescriptionValue('');
+              if (value === 'expense') {
+                setReimburseValue('FALSE');
+              }
+              setShowValidation(false);
+            }}
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="expense">Expense</TabsTrigger>
               <TabsTrigger value="income">Income</TabsTrigger>
             </TabsList>
-            <TabsContent value="expense">
-              <FormExpenses
-                date={date}
-                setDate={setDate}
-                subjectValue={subjectValue}
-                setSubjectValue={setSubjectValue}
-                amountValue={amountValue}
-                setAmountValue={setAmountValue}
-                categoryValue={categoryValue}
-                setCategoryValue={setCategoryValue}
-                descriptionValue={descriptionValue}
-                setDescriptionValue={setDescriptionValue}
-                reimburseValue={reimburseValue}
-                setReimburseValue={setReimburseValue}
-                isSubmitting={isSubmitting}
-                handleSubmit={handleSubmit}
-                showValidation={showValidation}
-              />
-            </TabsContent>
-            <TabsContent value="income">
-              <FormIncome
-                date={date}
-                setDate={setDate}
-                subjectValue={subjectValue}
-                setSubjectValue={setSubjectValue}
-                amountValue={amountValue}
-                setAmountValue={setAmountValue}
-                categoryValue={categoryValue}
-                setCategoryValue={setCategoryValue}
-                descriptionValue={descriptionValue}
-                setDescriptionValue={setDescriptionValue}
-                isSubmitting={isSubmitting}
-                handleSubmit={handleSubmit}
-                showValidation={showValidation}
-              />
-            </TabsContent>
+            <AnimatePresence mode="wait">
+              <TabsContent value="expense">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <FormExpenses
+                    date={date}
+                    setDate={setDate}
+                    subjectValue={subjectValue}
+                    setSubjectValue={setSubjectValue}
+                    amountValue={amountValue}
+                    setAmountValue={setAmountValue}
+                    categoryValue={categoryValue}
+                    setCategoryValue={setCategoryValue}
+                    descriptionValue={descriptionValue}
+                    setDescriptionValue={setDescriptionValue}
+                    reimburseValue={reimburseValue}
+                    setReimburseValue={setReimburseValue}
+                    isSubmitting={isSubmitting}
+                    handleSubmit={handleSubmit}
+                    showValidation={showValidation}
+                  />
+                </motion.div>
+              </TabsContent>
+              <TabsContent value="income">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <FormIncome
+                    date={date}
+                    setDate={setDate}
+                    subjectValue={subjectValue}
+                    setSubjectValue={setSubjectValue}
+                    amountValue={amountValue}
+                    setAmountValue={setAmountValue}
+                    categoryValue={categoryValue}
+                    setCategoryValue={setCategoryValue}
+                    descriptionValue={descriptionValue}
+                    setDescriptionValue={setDescriptionValue}
+                    isSubmitting={isSubmitting}
+                    handleSubmit={handleSubmit}
+                    showValidation={showValidation}
+                  />
+                </motion.div>
+              </TabsContent>
+            </AnimatePresence>
           </Tabs>
           <div className="flex justify-between mt-4 gap-4">
             <Button
