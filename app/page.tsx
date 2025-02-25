@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { categories, categoriesIncome } from '@/lib/categories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion";
-import { Info } from 'lucide-react';
 
 export default function Component() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -21,7 +20,6 @@ export default function Component() {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [showValidation, setShowValidation] = useState(false);
   const [activeTab, setActiveTab] = useState('expense');
-  const [isOpen, setIsOpen] = useState(false);
 
   const timestamp = (() => {
     const date = new Date();
@@ -108,15 +106,6 @@ export default function Component() {
     <div className="h-[100vh] flex flex-col items-center justify-center">
       <div className="w-full max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40">
       <Card className="max-w-sm mx-auto relative ">
-        <Button
-          className="absolute top-1 right-1 p-2 bg-background border rounded-full opacity-50 hover:opacity-100 transition-opacity z-10 shadow-sm text-secondary-foreground"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen(true);
-          }}
-        >
-          <Info className="h-4 w-4" />
-        </Button>
         <CardHeader className="text-center py-6 items-center">
           {/* <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Wallet className="w-8 h-8 text-white" />
