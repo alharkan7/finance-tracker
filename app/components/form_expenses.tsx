@@ -85,10 +85,13 @@ export function FormExpenses({
               <span className="sr-only"><SelectValue /></span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Ayah">Ayah</SelectItem>
-              <SelectItem value="Ibu">Ibu</SelectItem>
-              <SelectItem value="Kakak">Kakak</SelectItem>
-              <SelectItem value="Adik">Adik</SelectItem>
+              <SelectItem value="Al (Personal)"><b>Al</b> (Personal)</SelectItem>
+              <SelectItem value="Nurin (Personal)"><b>Nurin</b> (Personal)</SelectItem>
+              <SelectItem value="Al (Family)"><b>Al</b> (Family)</SelectItem>
+              <SelectItem value="Nurin (Family)"><b>Nurin</b> (Family)</SelectItem>
+              <SelectItem value="Al (Lainnya)"><b>Al</b> (Lainnya)</SelectItem>
+              <SelectItem value="Nurin (Lainnya)"><b>Nurin</b> (Lainnya)</SelectItem>
+              <SelectItem value="Al & Nurin"><b>Al & Nurin</b></SelectItem>
             </SelectContent>
           </Select>
           {showValidation && !subjectValue && (
