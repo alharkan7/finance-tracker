@@ -81,8 +81,8 @@ export function FormIncome({
               <span className="sr-only"><SelectValue /></span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Ayah">Ayah</SelectItem>
-              <SelectItem value="Ibu">Ibu</SelectItem>
+              <SelectItem value="Al">Al</SelectItem>
+              <SelectItem value="Nurin">Nurin</SelectItem>
             </SelectContent>
           </Select>
           {showValidation && !subjectValue && (
