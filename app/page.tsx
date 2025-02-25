@@ -111,7 +111,7 @@ export default function Component() {
             <Wallet className="w-8 h-8 text-white" />
           </div> */}
           <CardTitle className="text-2xl font-bold">
-            Finance Tracker <span className="font-thin">(Demo)</span>
+            Finance Tracker
           </CardTitle>
           {feedbackMessage && (
             <div className={`mt-4 px-3 py-1 text-sm font-medium rounded-md ${feedbackMessage.toLowerCase().includes('successfully')
