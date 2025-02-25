@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { categories, categoriesIncome } from '@/lib/categories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion";
+import { Info } from 'lucide-react';
 
 export default function Component() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -20,6 +21,7 @@ export default function Component() {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [showValidation, setShowValidation] = useState(false);
   const [activeTab, setActiveTab] = useState('expense');
+  const [isOpen, setIsOpen] = useState(false);
 
   const timestamp = (() => {
     const date = new Date();
@@ -103,16 +105,25 @@ export default function Component() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white p-4 flex items-center justify-center">
-      <Card className="w-full max-w-sm mx-auto">
+    <div className="h-[100vh] flex flex-col items-center justify-center">
+      <div className="w-full max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40">
+      <Card className="max-w-sm mx-auto relative ">
+        <Button
+          className="absolute top-1 right-1 p-2 bg-background border rounded-full opacity-50 hover:opacity-100 transition-opacity z-10 shadow-sm text-secondary-foreground"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(true);
+          }}
+        >
+          <Info className="h-4 w-4" />
+        </Button>
         <CardHeader className="text-center py-6 items-center">
           {/* <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Wallet className="w-8 h-8 text-white" />
           </div> */}
           <CardTitle className="text-2xl font-bold">
-            Finance Tracker
+            Finance Tracker <span className="font-thin">(Demo)</span>
           </CardTitle>
-          <p className="text-sm text-gray-500">Created by <a href="https://x.com/alhrkn" target="_blank" rel="noopener noreferrer">Al</a> & <a href="https://instagram.com/diananurindrasari" target="_blank" rel="noopener noreferrer">Diana</a></p>
           {feedbackMessage && (
             <div className={`mt-4 px-3 py-1 text-sm font-medium rounded-md ${feedbackMessage.toLowerCase().includes('successfully')
               ? 'bg-green-50 text-green-800 border border-green-200'
@@ -128,9 +139,8 @@ export default function Component() {
           <Tabs
             defaultValue="expense"
             className="w-full"
-            onValueChange={(value) => {
+            onValueChange={(value: string) => {
               setActiveTab(value);
-              // Reset all form values
               setDate(new Date().toISOString().split('T')[0]);
               setSubjectValue('');
               setAmountValue('');
@@ -146,9 +156,10 @@ export default function Component() {
               <TabsTrigger value="expense">Expense</TabsTrigger>
               <TabsTrigger value="income">Income</TabsTrigger>
             </TabsList>
-            <AnimatePresence mode="wait">
-              <TabsContent value="expense">
+            <AnimatePresence initial={false}>
+              <TabsContent key="expense" value="expense">
                 <motion.div
+                  key="expense-motion"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
@@ -173,8 +184,9 @@ export default function Component() {
                   />
                 </motion.div>
               </TabsContent>
-              <TabsContent value="income">
+              <TabsContent key="income" value="income">
                 <motion.div
+                  key="income-motion"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
@@ -202,7 +214,8 @@ export default function Component() {
           <div className="flex justify-between mt-4 gap-4">
             <Button
               type="button"
-              className="w-1/2 bg-white shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 text-gray-700 hover:text-primary-foreground rounded-lg py-4 flex items-center justify-center gap-2 font-medium"
+              variant='ghost'
+              className="w-1/2 gap-2"
               onClick={() => window.location.href = "https://bit.ly/adexpense-sheets"}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>
@@ -210,8 +223,9 @@ export default function Component() {
             </Button>
             <Button
               type="button"
-              className="w-1/2 bg-white shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 text-gray-700 hover:text-primary-foreground rounded-lg py-4 flex items-center justify-center gap-2 font-medium"
-              onClick={() => window.location.href = "https://bit.ly/adexpense-dash"}
+              variant='ghost'	
+              className="w-1/2 gap-2"
+              onClick={() => window.location.href = "https://bit.ly/adexpense-dashboards"}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M21 12H3" /><path d="M12 3v18" /></svg>
               Dashboard
@@ -219,6 +233,8 @@ export default function Component() {
           </div>
         </CardContent>
       </Card>
+      </div>
+
     </div>
   );
 }

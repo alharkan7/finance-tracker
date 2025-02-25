@@ -3,7 +3,6 @@
 import * as React from "react"
 import { format } from "date-fns"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -15,29 +14,28 @@ import {
 interface DatePickerProps {
   date: string;
   setDate: (date: string) => void;
+  triggerClassName?: string;
+  icon?: React.ReactNode;
 }
 
-export function DatePicker({ date, setDate }: DatePickerProps) {
-  const [selectedDate, setSelectedDate] = React.useState<Date>(new Date(date))
+export function DatePicker({ date, setDate, triggerClassName, icon }: DatePickerProps) {
+  const selectedDate = date ? new Date(date) : undefined;
 
-  const handleSelect = (day: Date | undefined) => {
-    if (day) {
-      setSelectedDate(day);
-      setDate(day.toISOString().split('T')[0]);
+  const handleSelect = (date: Date | undefined) => {
+    if (date) {
+      setDate(format(date, 'yyyy-MM-dd'));
     }
-  }
+  };
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant={"outline"}
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !selectedDate && "text-muted-foreground"
-          )}
+          variant="outline"
+          className={triggerClassName}
         >
-          {selectedDate ? format(selectedDate, "dd MMM yyyy") : <span>Pick a date</span>}
+          {icon}
+          <span className="sr-only">Open date picker</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
