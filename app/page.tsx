@@ -104,7 +104,7 @@ export default function Component() {
 
   return (
     <div className="h-[100vh] flex flex-col items-center justify-center">
-      <div className="w-full max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40">
+      <div className="w-full max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 px-2">
       <Card className="max-w-sm mx-auto relative ">
         <CardHeader className="text-center py-6 items-center">
           {/* <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
