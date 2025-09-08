@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, RefreshCw } from 'lucide-react';
 import DatePicker from "@/components/ui/date-picker"
-import { subjects, subjectsIncome, categories, categoriesIncome } from '@/lib/selections';
+import { subjects, subjectsIncome } from '@/lib/selections';
 
 interface ExpenseData {
   timestamp: string;
