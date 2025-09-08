@@ -39,12 +39,15 @@ const COLORS = [
   '#82CA9D', '#FFC658', '#FF7C7C', '#8DD1E1', '#D084D0'
 ];
 
-export function FormReport() {
-  const [expenses, setExpenses] = useState<ExpenseData[]>([]);
-  const [incomes, setIncomes] = useState<IncomeData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dataLoaded, setDataLoaded] = useState(false);
+interface FormReportProps {
+  expenses: ExpenseData[];
+  incomes: IncomeData[];
+  loading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+}
+
+export function FormReport({ expenses, incomes, loading, error, onRefresh }: FormReportProps) {
 
   // Filters
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
@@ -66,37 +69,6 @@ export function FormReport() {
   const [reimbursedFilter, setReimbursedFilter] = useState<string>('all');
   const [activeReportTab, setActiveReportTab] = useState('expenses');
 
-  const fetchData = useCallback(async () => {
-    if (dataLoaded) return; // Don't fetch if data is already loaded
-
-    setLoading(true);
-    setError(null);
-    try {
-      const [expensesRes, incomesRes] = await Promise.all([
-        fetch('/api/fetch-expenses'),
-        fetch('/api/fetch-income')
-      ]);
-
-      if (!expensesRes.ok || !incomesRes.ok) {
-        throw new Error('Failed to fetch data');
-      }
-
-      const expensesData = await expensesRes.json();
-      const incomesData = await incomesRes.json();
-
-      setExpenses(expensesData.expenses || []);
-      setIncomes(incomesData.incomes || []);
-      setDataLoaded(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  }, [dataLoaded]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -196,8 +168,7 @@ export function FormReport() {
   };
 
   const refreshData = async () => {
-    setDataLoaded(false);
-    await fetchData();
+    onRefresh();
   };
 
   if (loading) {
@@ -236,7 +207,7 @@ export function FormReport() {
           {/* Filters */}
           <div className="space-y-2">
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-2">
               {/* Subject Filter */}
               <div className="space-y-2">
                 {/* <Label htmlFor="subject-filter">Subject</Label> */}
@@ -359,7 +330,7 @@ export function FormReport() {
                     {/* Filters */}
           <div className="space-y-2">
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2">
               {/* Subject Filter */}
               <div className="space-y-2">
                 {/* <Label htmlFor="subject-filter">Subject</Label> */}

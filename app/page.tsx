@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { FormExpenses } from './components/form_expenses';
 import { FormIncome } from './components/form_income';
 import { FormReport } from './components/form_report';
@@ -9,6 +9,25 @@ import { Button } from "@/components/ui/button"
 import { categories, categoriesIncome } from '@/lib/selections';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion";
+
+interface ExpenseData {
+  timestamp: string;
+  subject: string;
+  date: string;
+  amount: number;
+  category: string;
+  description: string;
+  reimbursed: string;
+}
+
+interface IncomeData {
+  timestamp: string;
+  subject: string;
+  date: string;
+  amount: number;
+  category: string;
+  description: string;
+}
 
 export default function FinanceTrackerPage() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -22,6 +41,13 @@ export default function FinanceTrackerPage() {
   const [showValidation, setShowValidation] = useState(false);
   const [activeTab, setActiveTab] = useState('expense');
 
+  // Report data state
+  const [expenses, setExpenses] = useState<ExpenseData[]>([]);
+  const [incomes, setIncomes] = useState<IncomeData[]>([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
   const timestamp = (() => {
     const date = new Date();
     const year = date.getFullYear();
@@ -33,6 +59,46 @@ export default function FinanceTrackerPage() {
 
     return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
   })();
+
+  // Fetch report data
+  const fetchReportData = useCallback(async () => {
+    if (dataLoaded) return; // Don't fetch if data is already loaded
+
+    setReportLoading(true);
+    setReportError(null);
+    try {
+      const [expensesRes, incomesRes] = await Promise.all([
+        fetch('/api/fetch-expenses'),
+        fetch('/api/fetch-income')
+      ]);
+
+      if (!expensesRes.ok || !incomesRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const expensesData = await expensesRes.json();
+      const incomesData = await incomesRes.json();
+
+      setExpenses(expensesData.expenses || []);
+      setIncomes(incomesData.incomes || []);
+      setDataLoaded(true);
+    } catch (err) {
+      setReportError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setReportLoading(false);
+    }
+  }, [dataLoaded]);
+
+  // Fetch data when component mounts
+  useEffect(() => {
+    fetchReportData();
+  }, [fetchReportData]);
+
+  // Refresh report data
+  const refreshReportData = async () => {
+    setDataLoaded(false);
+    await fetchReportData();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +171,7 @@ export default function FinanceTrackerPage() {
 
   return (
     <div className="h-[100vh] flex flex-col items-center justify-center">
-      <div className="w-full max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 py-2 px-1">
+        <div className="w-full max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 py-2 px-4">
         <div className="max-w-sm mx-auto relative bg-card py-6 px-0 rounded-sm">
 
           <div className="text-center py-6 items-center">
@@ -226,7 +292,13 @@ export default function FinanceTrackerPage() {
                     transition={{ duration: 0.2 }}
                     className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
                   >
-                    <FormReport />
+                    <FormReport
+                      expenses={expenses}
+                      incomes={incomes}
+                      loading={reportLoading}
+                      error={reportError}
+                      onRefresh={refreshReportData}
+                    />
                   </motion.div>
                 </TabsContent>
               </AnimatePresence>
