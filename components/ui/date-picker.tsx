@@ -1,7 +1,9 @@
 "use client"
 
-import * as React from "react"
 import { format } from "date-fns"
+import { Calendar as CalendarIcon } from "lucide-react"
+
+import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -11,6 +13,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+import { cn } from "@/lib/utils"
+
 interface DatePickerProps {
   date: string;
   setDate: (date: string) => void;
@@ -18,12 +22,17 @@ interface DatePickerProps {
   icon?: React.ReactNode;
 }
 
-export function DatePicker({ date, setDate, triggerClassName, icon }: DatePickerProps) {
+export default function DatePicker({ 
+  date, 
+  setDate, 
+  triggerClassName, 
+  icon = <CalendarIcon className="h-4 w-4" /> 
+}: DatePickerProps) {
   const selectedDate = date ? new Date(date) : undefined;
 
-  const handleSelect = (date: Date | undefined) => {
-    if (date) {
-      setDate(format(date, 'yyyy-MM-dd'));
+  const handleDateSelect = (newDate: Date | undefined) => {
+    if (newDate) {
+      setDate(newDate.toISOString());
     }
   };
 
@@ -31,18 +40,25 @@ export function DatePicker({ date, setDate, triggerClassName, icon }: DatePicker
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
-          className={triggerClassName}
+          variant="noShadow"
+          className={cn(
+            triggerClassName || "w-[280px] justify-start text-left font-base",
+            !date && "text-muted-foreground",
+          )}
         >
           {icon}
-          <span className="sr-only">Open date picker</span>
+          {date && !triggerClassName ? (
+            <span className="ml-2">{format(new Date(date), "PPP")}</span>
+          ) : !triggerClassName ? (
+            <span className="text-mtext ml-2">Pick a date</span>
+          ) : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto !border-0 p-0">
         <Calendar
           mode="single"
           selected={selectedDate}
-          onSelect={handleSelect}
+          onSelect={handleDateSelect}
           initialFocus
         />
       </PopoverContent>

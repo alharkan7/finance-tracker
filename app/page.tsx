@@ -1,15 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FormExpenses } from './components/form_expenses';
 import { FormIncome } from './components/form_income';
+import { SheetsIcon, DashboardIcon } from './components/icons';
 import { Button } from "@/components/ui/button"
 import { categories, categoriesIncome } from '@/lib/categories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function Component() {
+export default function FinanceTrackerPage() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [subjectValue, setSubjectValue] = useState('');
   const [amountValue, setAmountValue] = useState('');
@@ -55,7 +55,7 @@ export default function Component() {
       const selectedCategory = categoryArray.find(cat => cat.value === categoryValue);
       const description = descriptionValue.trim() || selectedCategory?.label || categoryValue;
 
-      const response = await fetch(`/api/submit-${activeTab}`, {
+      const response = await fetch(`/api/finance-tracker/submit-${activeTab}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,126 +104,137 @@ export default function Component() {
 
   return (
     <div className="h-[100vh] flex flex-col items-center justify-center">
-      <div className="w-full max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 px-2">
-      <Card className="max-w-sm mx-auto relative ">
-        <CardHeader className="text-center py-6 items-center">
-          {/* <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Wallet className="w-8 h-8 text-white" />
-          </div> */}
-          <CardTitle className="text-2xl font-bold">
-            Finance Tracker
-          </CardTitle>
-          {feedbackMessage && (
-            <div className={`mt-4 px-3 py-1 text-sm font-medium rounded-md ${feedbackMessage.toLowerCase().includes('successfully')
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : feedbackMessage.includes('Submitting')
-                ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-              }`}>
-              {feedbackMessage}
-            </div>
-          )}
-        </CardHeader>
-        <CardContent>
-          <Tabs
-            defaultValue="expense"
-            className="w-full"
-            onValueChange={(value: string) => {
-              setActiveTab(value);
-              setDate(new Date().toISOString().split('T')[0]);
-              setSubjectValue('');
-              setAmountValue('');
-              setCategoryValue('');
-              setDescriptionValue('');
-              if (value === 'expense') {
-                setReimburseValue('FALSE');
-              }
-              setShowValidation(false);
-            }}
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="expense">Expense</TabsTrigger>
-              <TabsTrigger value="income">Income</TabsTrigger>
-            </TabsList>
-            <AnimatePresence initial={false}>
-              <TabsContent key="expense" value="expense">
-                <motion.div
-                  key="expense-motion"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <FormExpenses
-                    date={date}
-                    setDate={setDate}
-                    subjectValue={subjectValue}
-                    setSubjectValue={setSubjectValue}
-                    amountValue={amountValue}
-                    setAmountValue={setAmountValue}
-                    categoryValue={categoryValue}
-                    setCategoryValue={setCategoryValue}
-                    descriptionValue={descriptionValue}
-                    setDescriptionValue={setDescriptionValue}
-                    reimburseValue={reimburseValue}
-                    setReimburseValue={setReimburseValue}
-                    isSubmitting={isSubmitting}
-                    handleSubmit={handleSubmit}
-                    showValidation={showValidation}
-                  />
-                </motion.div>
-              </TabsContent>
-              <TabsContent key="income" value="income">
-                <motion.div
-                  key="income-motion"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <FormIncome
-                    date={date}
-                    setDate={setDate}
-                    subjectValue={subjectValue}
-                    setSubjectValue={setSubjectValue}
-                    amountValue={amountValue}
-                    setAmountValue={setAmountValue}
-                    categoryValue={categoryValue}
-                    setCategoryValue={setCategoryValue}
-                    descriptionValue={descriptionValue}
-                    setDescriptionValue={setDescriptionValue}
-                    isSubmitting={isSubmitting}
-                    handleSubmit={handleSubmit}
-                    showValidation={showValidation}
-                  />
-                </motion.div>
-              </TabsContent>
-            </AnimatePresence>
-          </Tabs>
-          <div className="flex justify-between mt-4 gap-4">
-            <Button
-              type="button"
-              variant='ghost'
-              className="w-1/2 gap-2"
-              onClick={() => window.location.href = "https://bit.ly/adexpense-sheets"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>
-              Sheets
-            </Button>
-            <Button
-              type="button"
-              variant='ghost'	
-              className="w-1/2 gap-2"
-              onClick={() => window.location.href = "https://bit.ly/adexpense-dashboards"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M21 12H3" /><path d="M12 3v18" /></svg>
-              Dashboard
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      </div>
+      <div className="w-full max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 py-2 px-1">
+        <div className="max-w-sm mx-auto relative bg-card py-6 px-0 rounded-sm">
 
+          <div className="text-center py-6 items-center">
+            <h2 className="text-2xl font-bold inline-flex items-center gap-2">
+              Finance Tracker
+            </h2>
+            {feedbackMessage && (
+              <div className={`mt-4 px-3 py-1 text-sm font-medium rounded-md ${feedbackMessage.toLowerCase().includes('successfully')
+                ? 'bg-green-50 text-green-800 border border-green-200'
+                : feedbackMessage.includes('Submitting')
+                  ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                  : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                {feedbackMessage}
+              </div>
+            )}
+          </div>
+          <div className="py-4 px-0">
+            <Tabs
+              defaultValue="expense"
+              className="w-full"
+              onValueChange={(value: string) => {
+                setActiveTab(value);
+                setDate(new Date().toISOString().split('T')[0]);
+                setSubjectValue('');
+                setAmountValue('');
+                setCategoryValue('');
+                setDescriptionValue('');
+                if (value === 'expense') {
+                  setReimburseValue('FALSE');
+                }
+                setShowValidation(false);
+              }}
+            >
+              <TabsList className="grid w-full grid-cols-2 bg-bg text-text">
+                <TabsTrigger
+                  value="expense"
+                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
+                >
+                  Expense
+                </TabsTrigger>
+                <TabsTrigger
+                  value="income"
+                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
+                >
+                  Income
+                </TabsTrigger>
+              </TabsList>
+              <AnimatePresence initial={false}>
+                <TabsContent key="expense" value="expense">
+                  <motion.div
+                    key="expense-motion"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
+                  >
+                    <FormExpenses
+                      date={date}
+                      setDate={setDate}
+                      subjectValue={subjectValue}
+                      setSubjectValue={setSubjectValue}
+                      amountValue={amountValue}
+                      setAmountValue={setAmountValue}
+                      categoryValue={categoryValue}
+                      setCategoryValue={setCategoryValue}
+                      descriptionValue={descriptionValue}
+                      setDescriptionValue={setDescriptionValue}
+                      reimburseValue={reimburseValue}
+                      setReimburseValue={setReimburseValue}
+                      isSubmitting={isSubmitting}
+                      handleSubmit={handleSubmit}
+                      showValidation={showValidation}
+                    />
+                  </motion.div>
+                </TabsContent>
+                <TabsContent key="income" value="income">
+                  <motion.div
+                    key="expense-motion"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
+                  >
+                    <FormIncome
+                      date={date}
+                      setDate={setDate}
+                      subjectValue={subjectValue}
+                      setSubjectValue={setSubjectValue}
+                      amountValue={amountValue}
+                      setAmountValue={setAmountValue}
+                      categoryValue={categoryValue}
+                      setCategoryValue={setCategoryValue}
+                      descriptionValue={descriptionValue}
+                      setDescriptionValue={setDescriptionValue}
+                      isSubmitting={isSubmitting}
+                      handleSubmit={handleSubmit}
+                      showValidation={showValidation}
+                    />
+                  </motion.div>
+                </TabsContent>
+              </AnimatePresence>
+            </Tabs>
+            <div className="flex justify-between mt-4 gap-4">
+              <Button
+                type="button"
+                variant='neutral'
+                className="w-1/2 gap-2"
+                onClick={() => window.location.href = "https://bit.ly/pocket-tracker-sheet"}
+              >
+                <SheetsIcon />
+                Sheets
+              </Button>
+              <Button
+                type="button"
+                variant='neutral'
+                className="w-1/2 gap-2"
+                onClick={() => window.location.href = "https://bit.ly/pocket-tracker-dashboard"}
+              >
+                <DashboardIcon />
+                Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="fixed bottom-0 left-0 right-0 py-1 text-center text-xs bg-background">
+      </div>
     </div>
   );
 }

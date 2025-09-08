@@ -5,7 +5,7 @@ import { categories } from '@/lib/categories';
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DatePicker } from "@/components/ui/date-picker"
+import DatePicker from "@/components/ui/date-picker"
 import { User2, Check, X, Calendar } from 'lucide-react';
 
 interface FormExpensesProps {
@@ -44,7 +44,7 @@ export function FormExpenses({
   handleSubmit,
 }: FormExpensesProps) {
   return (
-    <form className="border shadow-sm hover:shadow-md transition-shadow duration-200 p-6 rounded-lg" onSubmit={handleSubmit}>
+    <form className="shadow-sm hover:shadow-md transition-shadow duration-200 p-6 rounded-lg" onSubmit={handleSubmit}>
       <div className="space-y-2 w-full">
         <div className="relative">
           <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[2rem] text-secondary-foreground/50 font-medium">Rp</span>
@@ -61,13 +61,13 @@ export function FormExpenses({
                 setAmountValue(numericValue);
               }
             }}
-            className="text-[2rem] h-[3rem] leading-[3rem] font-medium border-0 border-b rounded-none focus:placeholder:opacity-0 focus:border-opacity-0 focus:outline-none focus:ring-0 px-0 placeholder: text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full pl-[3rem] bg-transparent"
+            className="text-[2rem] h-[3rem] leading-[3rem] font-medium border-0 border-b border-secondary-foreground/50 rounded-none focus:placeholder:opacity-0 focus:border-opacity-0 focus:outline-none focus:ring-0 px-0 placeholder:text-secondary-foreground/50 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full pl-[3rem] bg-transparent"
           />
         </div>
       </div>
 
       <div className="mt-8 grid grid-cols-4 gap-4">
-      <div className="space-y-2 flex flex-col items-center">
+        <div className="space-y-2 flex flex-col items-center">
           <Label htmlFor="subject" className='text-xs text-muted-foreground'>Subject</Label>
           <Select
             value={subjectValue}
@@ -76,22 +76,18 @@ export function FormExpenses({
           >
             <SelectTrigger
               id="subject"
-              className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${
-                showValidation && !subjectValue ? 'border-red-500 focus:ring-red-500' :
-                subjectValue ? 'border-primary text-primary' : 'border-muted-foreground/50 text-muted-foreground/50'
-              }`}
+              className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${showValidation && !subjectValue ? 'border-red-500 focus:ring-red-500' :
+                  subjectValue ? '' : 'shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none'
+                }`}
             >
               <User2 className="h-4 w-4" />
               <span className="sr-only"><SelectValue /></span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Al (Personal)"><b>Al</b> (Personal)</SelectItem>
-              <SelectItem value="Nurin (Personal)"><b>Nurin</b> (Personal)</SelectItem>
-              <SelectItem value="Al (Family)"><b>Al</b> (Family)</SelectItem>
-              <SelectItem value="Nurin (Family)"><b>Nurin</b> (Family)</SelectItem>
-              <SelectItem value="Al (Lainnya)"><b>Al</b> (Lainnya)</SelectItem>
-              <SelectItem value="Nurin (Lainnya)"><b>Nurin</b> (Lainnya)</SelectItem>
-              <SelectItem value="Al & Nurin"><b>Al & Nurin</b></SelectItem>
+              <SelectItem value="Ayah">Ayah</SelectItem>
+              <SelectItem value="Ibu">Ibu</SelectItem>
+              <SelectItem value="Kakak">Kakak</SelectItem>
+              <SelectItem value="Adik">Adik</SelectItem>
             </SelectContent>
           </Select>
           {showValidation && !subjectValue && (
@@ -108,7 +104,7 @@ export function FormExpenses({
             <SelectTrigger
               id="category"
               className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${showValidation && !categoryValue ? 'border-red-500 focus:ring-red-500' :
-                categoryValue ? 'border-primary text-primary' : 'border-muted-foreground/50 text-muted-foreground/50'
+                  categoryValue ? '' : 'shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none'
                 }`}
             >
               {categoryValue ? (
@@ -140,9 +136,9 @@ export function FormExpenses({
           <DatePicker
             date={date}
             setDate={setDate}
-            triggerClassName={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${date ? 'border-primary text-primary' : 'border-muted-foreground/50 text-muted-foreground/50'
+            triggerClassName={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full ${date ? '' : 'shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none'
               }`}
-            icon={<Calendar className="h-4 w-4" />}
+            icon={<Calendar className="h-4 w-4 flex-shrink-0" />}
           />
         </div>
         <div className="space-y-2 flex flex-col items-center">
@@ -153,9 +149,8 @@ export function FormExpenses({
           >
             <SelectTrigger
               id="reimbursed"
-              className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${
-                reimburseValue === 'TRUE' ? 'border-primary text-primary' : 'border-muted-foreground/50'
-              }`}
+              className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${reimburseValue === 'TRUE' ? 'border-primary text-primary' : 'border-muted-foreground/50'
+                }`}
             >
               {reimburseValue === 'TRUE' ? (
                 <Check className="h-4 w-4" />
@@ -167,13 +162,11 @@ export function FormExpenses({
             <SelectContent>
               <SelectItem value="TRUE">
                 <div className="flex items-center">
-                  <Check className="mr-2 h-4 w-4" />
                   <span>Yes</span>
                 </div>
               </SelectItem>
               <SelectItem value="FALSE">
                 <div className="flex items-center">
-                  <X className="mr-2 h-4 w-4" />
                   <span>No</span>
                 </div>
               </SelectItem>
@@ -186,7 +179,7 @@ export function FormExpenses({
         <textarea
           id="description"
           placeholder="Notes (optional)"
-          className="resize-none px-0 border-0 border-b rounded-none focus:ring-0 focus-visible:ring-0 focus:outline-none placeholder:text-muted-foreground/50 w-full align-bottom placeholder:bottom-1 placeholder:left-0 flex h-[2rem] focus:placeholder:opacity-0 max-h-none overflow-hidden bg-transparent"
+          className="resize-none px-0 border-0 border-b border-secondary-foreground/50 rounded-none focus:ring-0 focus-visible:ring-0 focus:outline-none placeholder:text-secondary-foreground/50 w-full align-bottom placeholder:bottom-1 placeholder:left-0 flex h-[2rem] focus:placeholder:opacity-0 max-h-none overflow-hidden bg-transparent"
           value={descriptionValue}
           onChange={(e) => {
             e.target.style.height = '2rem';
@@ -196,7 +189,7 @@ export function FormExpenses({
         />
       </div>
 
-      <Button className="w-full mt-8" variant="secondary" type="submit" disabled={isSubmitting}>
+      <Button className="w-full mt-8" variant="default" type="submit" disabled={isSubmitting}>
         {isSubmitting ? 'Save' : 'Save'}
       </Button>
     </form>

@@ -12,49 +12,63 @@ const config: Config = {
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
-  			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
-  			},
-  			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
-  			},
+  			main: 'var(--main)',
+  			bg: 'var(--bg)',
+  			bw: 'var(--bw)',
+  			blank: 'var(--blank)',
+  			border: 'hsl(var(--border))',
+  			text: 'var(--text)',
+  			mtext: 'var(--mtext)',
+  			ring: 'hsl(var(--ring))',
+  			'ring-offset': 'var(--ring-offset)',
+  			'secondary-foreground': 'var(--text)',
+  			'primary-foreground': 'var(--mtext)',
+  			'muted-foreground': 'var(--text)',
+  			'card-foreground': 'var(--text)',
+  			'popover-foreground': 'var(--text)',
+  			'accent-foreground': 'var(--text)',
+  			'destructive-foreground': 'var(--text)',
+  			'chart-1': 'hsl(var(--chart-1))',
+  			'chart-2': 'hsl(var(--chart-2))',
+  			'chart-3': 'hsl(var(--chart-3))',
+  			'chart-4': 'hsl(var(--chart-4))',
+  			'chart-5': 'hsl(var(--chart-5))',
   			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
+  				DEFAULT: 'var(--main)',
+  				foreground: 'var(--mtext)'
   			},
   			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
+  				DEFAULT: 'var(--bg)',
+  				foreground: 'var(--text)'
   			},
   			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
+  				DEFAULT: 'var(--bg)',
+  				foreground: 'var(--text)'
   			},
   			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
+  				DEFAULT: 'var(--main)',
+  				foreground: 'var(--mtext)'
   			},
   			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
+  				DEFAULT: 'var(--main)',
+  				foreground: 'var(--mtext)'
   			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			}
+  			input: 'var(--bg)',
+  			shadow: 'var(--shadow)',
+  			'reverse-shadow': 'var(--reverse-box-shadow-x) var(--reverse-box-shadow-y) 0px 0px var(--border)',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
+  		},
+  		boxShadow: {
+  			'shadow': 'var(--shadow)',
+  			'reverse': 'var(--reverse-box-shadow-x) var(--reverse-box-shadow-y) 0px 0px var(--border)'
+  		},
+  		fontWeight: {
+  			base: 'var(--base-font-weight)',
+  			heading: 'var(--heading-font-weight)'
   		}
   	}
   },
