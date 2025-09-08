@@ -1,12 +1,36 @@
 'use client'
 
 import React from 'react';
-import { categories } from '@/lib/categories';
+import { categories, subjects } from '@/lib/selections';
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import DatePicker from "@/components/ui/date-picker"
 import { User2, Check, X, Calendar } from 'lucide-react';
+
+function formatDropdownText(text: string) {
+  if (text.includes('&')) {
+    // If contains "&", make all words bold
+    return <span className="font-semibold">{text}</span>
+  }
+
+  const words = text.split(' ')
+  if (words.length <= 1) {
+    // Single word, return as is
+    return <span>{text}</span>
+  }
+
+  // Multiple words: first word bold, rest thin
+  const firstWord = words[0]
+  const restOfText = words.slice(1).join(' ')
+
+  return (
+    <span>
+      <span className="font-semibold">{firstWord}</span>
+      {restOfText && <span className="font-light"> {restOfText}</span>}
+    </span>
+  )
+}
 
 interface FormExpensesProps {
   date: string;
@@ -84,10 +108,11 @@ export function FormExpenses({
               <span className="sr-only"><SelectValue /></span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Ayah">Ayah</SelectItem>
-              <SelectItem value="Ibu">Ibu</SelectItem>
-              <SelectItem value="Kakak">Kakak</SelectItem>
-              <SelectItem value="Adik">Adik</SelectItem>
+              {subjects.map((subject) => (
+                <SelectItem key={subject.value} value={subject.value}>
+                  {formatDropdownText(subject.label)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           {showValidation && !subjectValue && (
@@ -121,7 +146,7 @@ export function FormExpenses({
                 <SelectItem key={category.value} value={category.value}>
                   <div className="flex items-center">
                     <category.icon className="mr-2 h-4 w-4" />
-                    <span>{category.label}</span>
+                    {formatDropdownText(category.label)}
                   </div>
                 </SelectItem>
               ))}
@@ -145,12 +170,14 @@ export function FormExpenses({
           <Label htmlFor="reimbursed" className='text-xs text-muted-foreground'>Reimbursed</Label>
           <Select
             value={reimburseValue}
+            defaultValue="FALSE"
             onValueChange={setReimburseValue}
           >
             <SelectTrigger
               id="reimbursed"
-              className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${reimburseValue === 'TRUE' ? 'border-primary text-primary' : 'border-muted-foreground/50'
-                }`}
+              className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${
+                reimburseValue ? '' : 'shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none'
+              }`}
             >
               {reimburseValue === 'TRUE' ? (
                 <Check className="h-4 w-4" />

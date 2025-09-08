@@ -5,7 +5,7 @@ import { FormExpenses } from './components/form_expenses';
 import { FormIncome } from './components/form_income';
 import { SheetsIcon, DashboardIcon } from './components/icons';
 import { Button } from "@/components/ui/button"
-import { categories, categoriesIncome } from '@/lib/categories';
+import { categories, categoriesIncome } from '@/lib/selections';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -55,7 +55,7 @@ export default function FinanceTrackerPage() {
       const selectedCategory = categoryArray.find(cat => cat.value === categoryValue);
       const description = descriptionValue.trim() || selectedCategory?.label || categoryValue;
 
-      const response = await fetch(`/api/finance-tracker/submit-${activeTab}`, {
+      const response = await fetch(`/api/submit-${activeTab}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -215,7 +215,7 @@ export default function FinanceTrackerPage() {
                 type="button"
                 variant='neutral'
                 className="w-1/2 gap-2"
-                onClick={() => window.location.href = "https://bit.ly/pocket-tracker-sheet"}
+                onClick={() => window.location.href = process.env.NEXT_PUBLIC_SHEETS_URL || "https://bit.ly/pocket-tracker-sheet"}
               >
                 <SheetsIcon />
                 Sheets
@@ -224,7 +224,7 @@ export default function FinanceTrackerPage() {
                 type="button"
                 variant='neutral'
                 className="w-1/2 gap-2"
-                onClick={() => window.location.href = "https://bit.ly/pocket-tracker-dashboard"}
+                onClick={() => window.location.href = process.env.NEXT_PUBLIC_DASHBOARD_URL || "https://bit.ly/pocket-tracker-dashboard"}
               >
                 <DashboardIcon />
                 Dashboard

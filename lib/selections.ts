@@ -24,7 +24,10 @@ import {
     Home,
     ChartArea,
     Dices,
-    Banknote, PenLine, BriefcaseBusiness, Landmark
+    Banknote,
+    PenLine,
+    BriefcaseBusiness,
+    Landmark
 } from "lucide-react"
 
 
@@ -53,4 +56,29 @@ export const categoriesIncome: Category[] = [
     { value: '💼 Business', icon: BriefcaseBusiness, label: 'Business' },
     { value: '🎁 Gift', icon: Landmark, label: 'Gift' },
     { value: '🎲 Others', icon: Dices, label: 'Others' },
+] as const;
+
+interface Subject {
+    value: string;
+    label: string;
+}
+
+export const subjects: Subject[] = [
+    { value: 'Al (Personal)', label: 'Al (Personal)' },
+    { value: 'Nurin (Personal)', label: 'Nurin (Personal)' },
+    { value: 'Al (Family)', label: 'Al (Family)' },
+    { value: 'Nurin (Family)', label: 'Nurin (Family)' },
+    { value: 'Al (Lainnya)', label: 'Al (Lainnya)' },
+    { value: 'Nurin (Lainnya)', label: 'Nurin (Lainnya)' },
+    { value: 'Al & Nurin', label: 'Al & Nurin' },
+] as const;
+
+interface SubjectIncome {
+    value: string;
+    label: string;
+}
+
+export const subjectsIncome: SubjectIncome[] = [
+    { value: 'Al', label: 'Al' },
+    { value: 'Nurin', label: 'Nurin' },
 ] as const;

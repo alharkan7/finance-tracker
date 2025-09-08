@@ -1,12 +1,36 @@
 'use client'
 
 import React from 'react';
-import { categoriesIncome } from '@/lib/categories';
+import { categoriesIncome, subjectsIncome } from '@/lib/selections';
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import DatePicker from "@/components/ui/date-picker"
 import { User2, Calendar } from 'lucide-react';
+
+function formatDropdownText(text: string) {
+  if (text.includes('&')) {
+    // If contains "&", make all words bold
+    return <span className="font-semibold">{text}</span>
+  }
+
+  const words = text.split(' ')
+  if (words.length <= 1) {
+    // Single word, return as is
+    return <span>{text}</span>
+  }
+
+  // Multiple words: first word bold, rest thin
+  const firstWord = words[0]
+  const restOfText = words.slice(1).join(' ')
+
+  return (
+    <span>
+      <span className="font-semibold">{firstWord}</span>
+      {restOfText && <span className="font-light"> {restOfText}</span>}
+    </span>
+  )
+}
 
 interface FormIncomeProps {
   date: string;
@@ -80,8 +104,11 @@ export function FormIncome({
               <span className="sr-only"><SelectValue /></span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Ayah">Ayah</SelectItem>
-              <SelectItem value="Ibu">Ibu</SelectItem>
+              {subjectsIncome.map((subject) => (
+                <SelectItem key={subject.value} value={subject.value}>
+                  {formatDropdownText(subject.label)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           {showValidation && !subjectValue && (
@@ -115,7 +142,7 @@ export function FormIncome({
                 <SelectItem key={category.value} value={category.value}>
                   <div className="flex items-center">
                     <category.icon className="mr-2 h-4 w-4" />
-                    <span>{category.label}</span>
+                    {formatDropdownText(category.label)}
                   </div>
                 </SelectItem>
               ))}
