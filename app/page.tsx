@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { FormExpenses } from './components/form_expenses';
 import { FormIncome } from './components/form_income';
+import { FormReport } from './components/form_report';
 import { SheetsIcon, DashboardIcon } from './components/icons';
 import { Button } from "@/components/ui/button"
 import { categories, categoriesIncome } from '@/lib/selections';
@@ -128,18 +129,20 @@ export default function FinanceTrackerPage() {
               className="w-full"
               onValueChange={(value: string) => {
                 setActiveTab(value);
-                setDate(new Date().toISOString().split('T')[0]);
-                setSubjectValue('');
-                setAmountValue('');
-                setCategoryValue('');
-                setDescriptionValue('');
-                if (value === 'expense') {
-                  setReimburseValue('FALSE');
+                if (value !== 'report') {
+                  setDate(new Date().toISOString().split('T')[0]);
+                  setSubjectValue('');
+                  setAmountValue('');
+                  setCategoryValue('');
+                  setDescriptionValue('');
+                  if (value === 'expense') {
+                    setReimburseValue('FALSE');
+                  }
+                  setShowValidation(false);
                 }
-                setShowValidation(false);
               }}
             >
-              <TabsList className="grid w-full grid-cols-2 bg-bg text-text">
+              <TabsList className="grid w-full grid-cols-3 bg-bg text-text">
                 <TabsTrigger
                   value="expense"
                   className="data-[state=active]:bg-main data-[state=active]:text-mtext"
@@ -151,6 +154,12 @@ export default function FinanceTrackerPage() {
                   className="data-[state=active]:bg-main data-[state=active]:text-mtext"
                 >
                   Income
+                </TabsTrigger>
+                <TabsTrigger
+                  value="report"
+                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
+                >
+                  Report
                 </TabsTrigger>
               </TabsList>
               <AnimatePresence initial={false}>
@@ -206,6 +215,18 @@ export default function FinanceTrackerPage() {
                       handleSubmit={handleSubmit}
                       showValidation={showValidation}
                     />
+                  </motion.div>
+                </TabsContent>
+                <TabsContent key="report" value="report">
+                  <motion.div
+                    key="report-motion"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
+                  >
+                    <FormReport />
                   </motion.div>
                 </TabsContent>
               </AnimatePresence>
