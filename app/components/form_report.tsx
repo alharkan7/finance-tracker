@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -66,9 +66,9 @@ export function FormReport() {
   const [reimbursedFilter, setReimbursedFilter] = useState<string>('all');
   const [activeReportTab, setActiveReportTab] = useState('expenses');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (dataLoaded) return; // Don't fetch if data is already loaded
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -92,11 +92,11 @@ export function FormReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dataLoaded]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -152,7 +152,7 @@ export function FormReport() {
     });
   };
 
-  const prepareChartData = (data: any[], categoriesList: any[]): ChartData[] => {
+  const prepareChartData = (data: any[]): ChartData[] => {
     const categoryTotals: { [key: string]: number } = {};
 
     data.forEach(item => {
@@ -174,8 +174,8 @@ export function FormReport() {
   const filteredExpenses = filterData(expenses, 'expenses');
   const filteredIncomes = filterData(incomes, 'incomes');
 
-  const expensesChartData = prepareChartData(filteredExpenses, categories);
-  const incomesChartData = prepareChartData(filteredIncomes, categoriesIncome);
+  const expensesChartData = prepareChartData(filteredExpenses);
+  const incomesChartData = prepareChartData(filteredIncomes);
 
   const totalExpenses = filteredExpenses.reduce((sum, item) => sum + item.amount, 0);
   const totalIncomes = filteredIncomes.reduce((sum, item) => sum + item.amount, 0);
@@ -193,22 +193,6 @@ export function FormReport() {
       );
     }
     return null;
-  };
-
-  const customLegendFormatter = (value: string, entry: any) => {
-    const percentage = ((entry.payload.value / (activeReportTab === 'expenses' ? totalExpenses : totalIncomes)) * 100).toFixed(1);
-    return `${value} (${percentage}%)`;
-  };
-
-  const resetFilters = () => {
-    setSubjectFilter('all');
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const firstDay = new Date(year, month, 1);
-    setDateFromFilter(`${year}-${String(month + 1).padStart(2, '0')}-${String(firstDay.getDate()).padStart(2, '0')}`);
-    setDateToFilter(`${year}-${String(month + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
-    setReimbursedFilter('all');
   };
 
   const refreshData = async () => {
