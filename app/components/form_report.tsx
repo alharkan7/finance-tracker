@@ -45,6 +45,7 @@ export function FormReport() {
   const [incomes, setIncomes] = useState<IncomeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Filters
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
@@ -67,6 +68,8 @@ export function FormReport() {
   const [activeReportTab, setActiveReportTab] = useState('expenses');
 
   const fetchData = async () => {
+    if (dataLoaded) return; // Don't fetch if data is already loaded
+    
     setLoading(true);
     setError(null);
     try {
@@ -84,6 +87,7 @@ export function FormReport() {
 
       setExpenses(expensesData.expenses || []);
       setIncomes(incomesData.incomes || []);
+      setDataLoaded(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -208,6 +212,11 @@ export function FormReport() {
     setReimbursedFilter('all');
   };
 
+  const refreshData = async () => {
+    setDataLoaded(false);
+    await fetchData();
+  };
+
   if (loading) {
     return (
       <div className="p-6 text-center">
@@ -221,7 +230,7 @@ export function FormReport() {
     return (
       <div className="p-6 text-center">
         <p className="text-red-600 mb-4">Error: {error}</p>
-        <Button onClick={fetchData} variant="neutral">
+        <Button onClick={refreshData} variant="neutral">
           <RefreshCw className="h-4 w-4 mr-2" />
           Retry
         </Button>
@@ -302,35 +311,58 @@ export function FormReport() {
                 </div>
               )}
             </div>
+
           </div>
           <div className="text-center !mt-4 !mb-0">
-            <h4 className="text-xl font-semibold mb-2">Total Expenses</h4>
+            <h4 className="text-xl font-semibold mb-2 flex items-center justify-center gap-2">
+              Total Expenses
+              <RefreshCw 
+                className="h-4 w-4 cursor-pointer hover:text-primary transition-colors" 
+                onClick={refreshData}
+              />
+            </h4>
             <p className="text-2xl font-bold text-primary">{formatCurrency(totalExpenses)}</p>
             <p className="text-sm text-primary/50">{filteredExpenses.length} Transactions</p>
           </div>
 
           {expensesChartData.length > 0 ? (
-            <div className="h-96 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={expensesChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={120}
-                    innerRadius={60}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {expensesChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend formatter={customLegendFormatter} wrapperStyle={{ fontSize: '12px', marginTop: '20px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="space-y-2">
+              <div className="h-64 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                    <Pie
+                      data={expensesChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={110}
+                      innerRadius={55}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {expensesChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Custom Legend */}
+              <div className="flex flex-wrap justify-center gap-2 px-2">
+                {expensesChartData.map((entry) => {
+                  const percentage = ((entry.value / totalExpenses) * 100).toFixed(1);
+                  return (
+                    <div key={entry.name} className="flex items-center gap-2 text-xs">
+                      <div 
+                        className="w-3 h-3 rounded" 
+                        style={{ backgroundColor: entry.color }}
+                      ></div>
+                      <span>{entry.name} ({percentage}%)</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <div className="text-center py-8">
@@ -387,38 +419,60 @@ export function FormReport() {
             </div>
           </div>
           <div className="text-center !mt-4 !mb-0">
-            <h4 className="text-xl font-semibold mb-2">Total Income</h4>
+            <h4 className="text-xl font-semibold mb-2 flex items-center justify-center gap-2">
+              Total Income
+              <RefreshCw 
+                className="h-4 w-4 cursor-pointer hover:text-primary transition-colors" 
+                onClick={refreshData}
+              />
+            </h4>
             <p className="text-2xl font-bold text-primary">{formatCurrency(totalIncomes)}</p>
             <p className="text-sm text-primary/50">{filteredIncomes.length} Transactions</p>
           </div>
 
           {incomesChartData.length > 0 ? (
-            <div className="h-96 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={incomesChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={120}
-                    innerRadius={60}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {incomesChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend formatter={customLegendFormatter} wrapperStyle={{ fontSize: '12px', marginTop: '20px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-sm text-gray-600">Total</div>
-                  <div className="text-lg font-bold text-green-600">{formatCurrency(totalIncomes)}</div>
+            <div className="space-y-2">
+              <div className="h-64 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                    <Pie
+                      data={incomesChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={110}
+                      innerRadius={55}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {incomesChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-600">Total</div>
+                    <div className="text-lg font-bold text-green-600">{formatCurrency(totalIncomes)}</div>
+                  </div>
                 </div>
+              </div>
+              {/* Custom Legend */}
+              <div className="flex flex-wrap justify-center gap-2 px-2">
+                {incomesChartData.map((entry) => {
+                  const percentage = ((entry.value / totalIncomes) * 100).toFixed(1);
+                  return (
+                    <div key={entry.name} className="flex items-center gap-2 text-xs">
+                      <div 
+                        className="w-3 h-3 rounded" 
+                        style={{ backgroundColor: entry.color }}
+                      ></div>
+                      <span>{entry.name} ({percentage}%)</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (

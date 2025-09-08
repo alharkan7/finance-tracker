@@ -159,7 +159,7 @@ export default function FinanceTrackerPage() {
                   value="report"
                   className="data-[state=active]:bg-main data-[state=active]:text-mtext"
                 >
-                  Report
+                  Reports
                 </TabsTrigger>
               </TabsList>
               <AnimatePresence initial={false}>
