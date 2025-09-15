@@ -9,6 +9,7 @@ import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
 import { ExpenseForm } from './components/expense-form'
 import { SheetSettings } from './components/sheet-settings'
+import { BudgetDrawer } from './components/budget-drawer'
 import {
   Drawer,
   DrawerContent,
@@ -134,13 +135,99 @@ export default function MobileFinanceTracker() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [drawerKey, setDrawerKey] = useState(0)
 
+  // Budget drawer state
+  const [isBudgetDrawerOpen, setIsBudgetDrawerOpen] = useState(false)
+
+  // Budget data state
+  const [monthlyBudget, setMonthlyBudget] = useState<number>(0)
+  const [budgetLoading, setBudgetLoading] = useState(false)
+
   // Budget alert dialog state
   const [isBudgetAlertOpen, setIsBudgetAlertOpen] = useState(false)
+
+  // Month filter state
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   
-  // Calculate balance from real data
-  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
+  // Filter data by selected month
+  const filterDataByMonth = (data: any[]) => {
+    return data.filter(item => {
+      if (!item.date) return false
+      const itemDate = new Date(item.date)
+      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+    })
+  }
+
+  const filteredExpenses = filterDataByMonth(expenses)
+  const filteredIncomes = filterDataByMonth(incomes)
+
+  // Calculate balance from filtered data
+  const totalIncome = filteredIncomes.reduce((sum, income) => sum + income.amount, 0)
+  const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0)
   const balance = totalIncome - totalExpenses
+
+  // Month navigation functions
+  const getMonthName = (month: number) => {
+    const monthNames = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ]
+    return monthNames[month]
+  }
+
+  const getDateLimits = () => {
+    const allDates = [...expenses, ...incomes]
+      .map(item => item.date)
+      .filter(date => date)
+      .map(date => new Date(date))
+
+    if (allDates.length === 0) {
+      const now = new Date()
+      return {
+        minDate: new Date(now.getFullYear(), now.getMonth(), 1),
+        maxDate: new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      }
+    }
+
+    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())))
+    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())))
+
+    return {
+      minDate: new Date(minDate.getFullYear(), minDate.getMonth(), 1),
+      maxDate: new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 0)
+    }
+  }
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const { minDate, maxDate } = getDateLimits()
+    const currentDate = new Date(currentYear, currentMonth, 1)
+
+    if (direction === 'prev') {
+      const prevMonth = new Date(currentYear, currentMonth - 1, 1)
+      if (prevMonth >= minDate) {
+        setCurrentMonth(prevMonth.getMonth())
+        setCurrentYear(prevMonth.getFullYear())
+      }
+    } else {
+      const nextMonth = new Date(currentYear, currentMonth + 1, 1)
+      if (nextMonth <= maxDate) {
+        setCurrentMonth(nextMonth.getMonth())
+        setCurrentYear(nextMonth.getFullYear())
+      }
+    }
+  }
+
+  const canNavigatePrev = () => {
+    const { minDate } = getDateLimits()
+    const prevMonth = new Date(currentYear, currentMonth - 1, 1)
+    return prevMonth >= minDate
+  }
+
+  const canNavigateNext = () => {
+    const { maxDate } = getDateLimits()
+    const nextMonth = new Date(currentYear, currentMonth + 1, 1)
+    return nextMonth <= maxDate
+  }
 
   // Check user sheet configuration
   const checkUserSheet = async () => {
@@ -206,10 +293,22 @@ export default function MobileFinanceTracker() {
 
         if (isCacheValid(expensesCache) && isCacheValid(incomesCache)) {
           console.log('Using cached data')
-          setExpenses(expensesCache!.data)
-          setIncomes(incomesCache!.data)
-          // Set chart data directly from cache
-          const dataToUse = chartMode === 'expense' ? expensesCache!.data : incomesCache!.data
+          const cachedExpenses = expensesCache!.data
+          const cachedIncomes = incomesCache!.data
+          setExpenses(cachedExpenses)
+          setIncomes(cachedIncomes)
+          // Set chart data directly from cache (with filtering)
+          const filterDataByMonthLocal = (data: any[]) => {
+            return data.filter(item => {
+              if (!item.date) return false
+              const itemDate = new Date(item.date)
+              return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+            })
+          }
+
+          const filteredExpensesLocal = filterDataByMonthLocal(cachedExpenses)
+          const filteredIncomesLocal = filterDataByMonthLocal(cachedIncomes)
+          const dataToUse = chartMode === 'expense' ? filteredExpensesLocal : filteredIncomesLocal
           const categoryTotals: { [key: string]: number } = {}
           dataToUse.forEach(item => {
             if (item.category && item.amount) {
@@ -280,8 +379,18 @@ export default function MobileFinanceTracker() {
       setExpenses(expenses)
       setIncomes(incomes)
 
-      // Update chart data based on current mode
-      const dataToUse = chartMode === 'expense' ? expenses : incomes
+      // Update chart data based on current mode (using filtered data)
+      const filterDataByMonthLocal = (data: any[]) => {
+        return data.filter(item => {
+          if (!item.date) return false
+          const itemDate = new Date(item.date)
+          return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+        })
+      }
+
+      const filteredExpensesLocal = filterDataByMonthLocal(expenses)
+      const filteredIncomesLocal = filterDataByMonthLocal(incomes)
+      const dataToUse = chartMode === 'expense' ? filteredExpensesLocal : filteredIncomesLocal
       const categoryTotals: { [key: string]: number } = {}
       dataToUse.forEach((item: any) => {
         if (item.category && item.amount) {
@@ -423,10 +532,22 @@ export default function MobileFinanceTracker() {
     }
   }, [session, status])
 
-  // Update chart data when mode changes
+  // Update chart data when mode or month changes
   useEffect(() => {
     if (expenses.length > 0 || incomes.length > 0) {
-      const dataToUse = chartMode === 'expense' ? expenses : incomes
+      // Filter data by selected month
+      const filterDataByMonthLocal = (data: any[]) => {
+        return data.filter(item => {
+          if (!item.date) return false
+          const itemDate = new Date(item.date)
+          return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+        })
+      }
+
+      const filteredExpensesLocal = filterDataByMonthLocal(expenses)
+      const filteredIncomesLocal = filterDataByMonthLocal(incomes)
+
+      const dataToUse = chartMode === 'expense' ? filteredExpensesLocal : filteredIncomesLocal
       const categoryTotals: { [key: string]: number } = {}
       dataToUse.forEach((item: any) => {
         if (item.category && item.amount) {
@@ -441,7 +562,7 @@ export default function MobileFinanceTracker() {
       }))
       setChartData(newChartData.length > 0 ? newChartData : mockChartData)
     }
-  }, [chartMode, expenses, incomes])
+  }, [chartMode, expenses, incomes, currentMonth, currentYear])
 
   // Automatically open sheet settings if no sheet is configured
   useEffect(() => {
@@ -462,8 +583,17 @@ export default function MobileFinanceTracker() {
       setFormLoading(true)
       const endpoint = formData.type === 'expense' ? '/api/submit-expense' : '/api/submit-income'
 
+      // Format timestamp in readable format: YYYY-MM-DD HH:MM:SS
+      const now = new Date()
+      const timestamp = now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0') + ':' +
+        String(now.getSeconds()).padStart(2, '0')
+
       const payload = {
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp,
         date: formData.date,
         amount: formData.amount,
         category: formData.category,
@@ -498,8 +628,18 @@ export default function MobileFinanceTracker() {
             const newIncomes = incomesData.incomes || []
 
             // Update chart data only
-            // Update chart data after form submission
-            const dataToUse = chartMode === 'expense' ? newExpenses : newIncomes
+            // Update chart data after form submission (using filtered data)
+            const filterDataByMonthLocal = (data: any[]) => {
+              return data.filter(item => {
+                if (!item.date) return false
+                const itemDate = new Date(item.date)
+                return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+              })
+            }
+
+            const filteredNewExpenses = filterDataByMonthLocal(newExpenses)
+            const filteredNewIncomes = filterDataByMonthLocal(newIncomes)
+            const dataToUse = chartMode === 'expense' ? filteredNewExpenses : filteredNewIncomes
             const categoryTotals: { [key: string]: number } = {}
             dataToUse.forEach((item: any) => {
               if (item.category && item.amount) {
@@ -640,6 +780,14 @@ export default function MobileFinanceTracker() {
             balance={balance}
             loading={loading}
             mode={chartMode}
+            currentMonth={currentMonth}
+            currentYear={currentYear}
+            onNavigateMonth={navigateMonth}
+            canNavigatePrev={false}
+            canNavigateNext={false}
+            getMonthName={getMonthName}
+            expenses={expenses}
+            incomes={incomes}
           />
         )}
 
@@ -655,7 +803,11 @@ export default function MobileFinanceTracker() {
 
       {/* Bottom Navigation */}
       <div className="flex gap-2 p-3 mb-2 bg-white w-full flex-shrink-0">
-        <Button variant="neutral" className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent">
+        <Button
+          variant="neutral"
+          className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent"
+          onClick={() => setIsBudgetDrawerOpen(true)}
+        >
           <Zap className="w-3 h-3 mr-1" />
           Anggaran
         </Button>
@@ -723,6 +875,12 @@ export default function MobileFinanceTracker() {
             </DialogHeader>
           </DialogContent>
         </Dialog>
+
+        {/* Budget Drawer */}
+        <BudgetDrawer
+          isOpen={isBudgetDrawerOpen}
+          onClose={() => setIsBudgetDrawerOpen(false)}
+        />
       </div>
     </div>
   )

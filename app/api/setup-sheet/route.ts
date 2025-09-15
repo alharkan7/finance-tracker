@@ -123,6 +123,11 @@ export async function POST(req: Request) {
                 title: 'Incomes',
               },
             },
+            {
+              properties: {
+                title: 'Budget',
+              },
+            },
           ],
         },
       });
@@ -167,6 +172,16 @@ export async function POST(req: Request) {
           valueInputOption: 'USER_ENTERED',
           requestBody: {
             values: [['Timestamp', 'Date', 'Amount', 'Category', 'Description']],
+          },
+        });
+
+        // Setup headers for Budget sheet
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: newSheetId,
+          range: 'Budget!A1:D1',
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['Timestamp', 'Date', 'Amount', 'Notes']],
           },
         });
         
@@ -231,6 +246,16 @@ export async function POST(req: Request) {
           });
         }
 
+        if (!existingSheets.includes('Budget')) {
+          requests.push({
+            addSheet: {
+              properties: {
+                title: 'Budget',
+              },
+            },
+          });
+        }
+
         // Create missing sheets if any
         if (requests.length > 0) {
           await sheets.spreadsheets.batchUpdate({
@@ -257,6 +282,15 @@ export async function POST(req: Request) {
           valueInputOption: 'USER_ENTERED',
           requestBody: {
             values: [['Timestamp', 'Date', 'Amount', 'Category', 'Description']],
+          },
+        });
+
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: 'Budget!A1:D1',
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['Timestamp', 'Date', 'Amount', 'Notes']],
           },
         });
 

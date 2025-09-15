@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { Plus, Minus, Loader2, Info } from 'lucide-react'
+import { Plus, Minus, Loader2, Info, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface ChartData {
@@ -18,9 +18,62 @@ interface ChartProps {
   balance: number;
   loading: boolean;
   mode?: 'income' | 'expense';
+  currentMonth: number;
+  currentYear: number;
+  onNavigateMonth: (direction: 'prev' | 'next') => void;
+  canNavigatePrev: boolean;
+  canNavigateNext: boolean;
+  getMonthName: (month: number) => string;
+  expenses: any[];
+  incomes: any[];
 }
 
-export function Chart({ data, totalIncome, totalExpenses, balance, loading, mode = 'expense' }: ChartProps) {
+export function Chart({
+  data,
+  totalIncome,
+  totalExpenses,
+  balance,
+  loading,
+  mode = 'expense',
+  currentMonth,
+  currentYear,
+  onNavigateMonth,
+  canNavigatePrev: propCanNavigatePrev,
+  canNavigateNext: propCanNavigateNext,
+  getMonthName,
+  expenses,
+  incomes
+}: ChartProps) {
+  // Calculate navigation limits internally to avoid infinite loops
+  const getDateLimits = () => {
+    const allDates = [...expenses, ...incomes]
+      .map(item => item.date)
+      .filter(date => date)
+      .map(date => new Date(date))
+
+    if (allDates.length === 0) {
+      const now = new Date()
+      return {
+        minDate: new Date(now.getFullYear(), now.getMonth(), 1),
+        maxDate: new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      }
+    }
+
+    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())))
+    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())))
+
+    return {
+      minDate: new Date(minDate.getFullYear(), minDate.getMonth(), 1),
+      maxDate: new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 0)
+    }
+  }
+
+  const { minDate, maxDate } = getDateLimits()
+  const prevMonth = new Date(currentYear, currentMonth - 1, 1)
+  const nextMonth = new Date(currentYear, currentMonth + 1, 1)
+
+  const canNavigatePrevInternal = prevMonth >= minDate
+  const canNavigateNextInternal = nextMonth <= maxDate
   const [selectedSegment, setSelectedSegment] = useState<ChartData | null>(null)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
@@ -43,28 +96,36 @@ export function Chart({ data, totalIncome, totalExpenses, balance, loading, mode
   return (
     <div className="text-center space-y-2 w-full max-w-sm">
       <div>
-        <p className="text-gray-600 text-sm">Saldo saat ini</p>
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <button
+            onClick={() => onNavigateMonth('prev')}
+            disabled={!canNavigatePrevInternal}
+            className={`p-1 rounded-full transition-colors ${
+              canNavigatePrevInternal
+                ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <p className="text-gray-600 text-sm">
+            Saldo {getMonthName(currentMonth)} {currentYear}
+          </p>
+          <button
+            onClick={() => onNavigateMonth('next')}
+            disabled={!canNavigateNextInternal}
+            className={`p-1 rounded-full transition-colors ${
+              canNavigateNextInternal
+                ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
         <h1 className="text-2xl font-bold text-gray-900 break-words">
           Rp {balance.toLocaleString('id-ID')}
         </h1>
-        <div className="flex justify-center gap-4 mt-2 text-sm">
-          <span className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-200 ${
-            mode === 'income'
-              ? 'bg-green-100 text-green-800 font-bold shadow-sm'
-              : 'text-green-600'
-          }`}>
-            <Plus className="w-4 h-4" />
-            {totalIncome.toLocaleString('id-ID')}
-          </span>
-          <span className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-200 ${
-            mode === 'expense'
-              ? 'bg-red-100 text-red-800 font-bold shadow-sm'
-              : 'text-red-600'
-          }`}>
-            <Minus className="w-4 h-4" />
-            {totalExpenses.toLocaleString('id-ID')}
-          </span>
-        </div>
       </div>
 
       {/* Donut Chart */}
@@ -130,6 +191,23 @@ export function Chart({ data, totalIncome, totalExpenses, balance, loading, mode
           ))}
         </div>
       )} */}
+
+      <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
+        <span className={`flex items-center justify-center gap-1 px-2 py-1 rounded-full transition-all duration-200 ${mode === 'income'
+            ? 'bg-green-100 text-green-800 font-bold shadow-sm'
+            : 'text-green-600'
+          }`}>
+          <Plus className="w-4 h-4" />
+          {totalIncome.toLocaleString('id-ID')}
+        </span>
+        <span className={`flex items-center justify-center gap-1 px-2 py-1 rounded-full transition-all duration-200 ${mode === 'expense'
+            ? 'bg-red-100 text-red-800 font-bold shadow-sm'
+            : 'text-red-600'
+          }`}>
+          <Minus className="w-4 h-4" />
+          {totalExpenses.toLocaleString('id-ID')}
+        </span>
+      </div>
     </div>
   )
 }
