@@ -52,6 +52,55 @@ const mockChartData = [
   { name: 'Others', value: 100, color: '#FF8042' },
 ]
 
+// Cache configuration
+const CACHE_KEY_EXPENSES = 'expense_tracker_expenses'
+const CACHE_KEY_INCOMES = 'expense_tracker_incomes'
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
+
+interface CacheData {
+  data: any[]
+  timestamp: number
+}
+
+// Cache utilities
+const getCache = (key: string): CacheData | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    const cached = localStorage.getItem(key)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+const setCache = (key: string, data: any[]) => {
+  if (typeof window === 'undefined') return
+  try {
+    const cacheData: CacheData = {
+      data,
+      timestamp: Date.now()
+    }
+    localStorage.setItem(key, JSON.stringify(cacheData))
+  } catch {
+    // Ignore cache write errors
+  }
+}
+
+const isCacheValid = (cache: CacheData | null): boolean => {
+  if (!cache) return false
+  return (Date.now() - cache.timestamp) < CACHE_DURATION
+}
+
+const clearCache = () => {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(CACHE_KEY_EXPENSES)
+    localStorage.removeItem(CACHE_KEY_INCOMES)
+  } catch {
+    // Ignore cache clear errors
+  }
+}
+
 export default function MobileFinanceTracker() {
   const { data: session, status } = useSession()
   
@@ -94,18 +143,33 @@ export default function MobileFinanceTracker() {
     }
   }
 
-  // Fetch data from Google Sheets
-  const fetchData = async () => {
+  // Fetch data from Google Sheets with caching
+  const fetchData = async (forceRefresh = false) => {
     if (!session) {
       setLoading(false)
       return
     }
 
     try {
+      // Check cache first unless force refresh is requested
+      if (!forceRefresh) {
+        const expensesCache = getCache(CACHE_KEY_EXPENSES)
+        const incomesCache = getCache(CACHE_KEY_INCOMES)
+
+        if (isCacheValid(expensesCache) && isCacheValid(incomesCache)) {
+          console.log('Using cached data')
+          setExpenses(expensesCache!.data)
+          setIncomes(incomesCache!.data)
+          updateChartData(expensesCache!.data)
+          setLoading(false)
+          return
+        }
+      }
+
       setLoading(true)
       setError(null)
 
-      // Fetch both expenses and incomes in parallel 
+      // Fetch both expenses and incomes in parallel
       const [expensesResponse, incomesResponse] = await Promise.all([
         fetch('/api/fetch-expenses'),
         fetch('/api/fetch-income')
@@ -144,11 +208,18 @@ export default function MobileFinanceTracker() {
       const expensesData = await expensesResponse.json()
       const incomesData = await incomesResponse.json()
 
-      setExpenses(expensesData.expenses || [])
-      setIncomes(incomesData.incomes || [])
+      const expenses = expensesData.expenses || []
+      const incomes = incomesData.incomes || []
+
+      // Cache the data
+      setCache(CACHE_KEY_EXPENSES, expenses)
+      setCache(CACHE_KEY_INCOMES, incomes)
+
+      setExpenses(expenses)
+      setIncomes(incomes)
 
       // Update chart data based on expense categories
-      updateChartData(expensesData.expenses || [])
+      updateChartData(expenses)
 
     } catch (err: any) {
       console.error('Error fetching data:', err)
@@ -210,10 +281,11 @@ export default function MobileFinanceTracker() {
           })
         } else {
           // Everything worked perfectly
+          clearCache() // Clear old cache since we have new sheet
           setError(null)
           alert(`🎉 Sheet created and configured successfully! Your personal expense tracker is ready.`)
           // Refresh data after successful creation
-          await fetchData()
+          await fetchData(true)
         }
       } else {
         throw result
@@ -243,13 +315,14 @@ export default function MobileFinanceTracker() {
       
       if (response.ok) {
         // Update user sheet status
+        clearCache() // Clear old cache since we have new sheet
         setHasUserSheet(true)
         setUserSheetId(sheetId)
         setError(null)
-        
+
         alert('🎉 Sheet setup successfully! Permissions automatically granted. Your personal expense tracker is ready.')
         // Refresh data after successful setup
-        await fetchData()
+        await fetchData(true)
       } else {
         throw result
       }
@@ -316,9 +389,10 @@ export default function MobileFinanceTracker() {
       })
 
       if (response.ok) {
-        // Refresh data
-        await fetchData()
-        
+        // Clear cache and refresh data to get latest state
+        clearCache()
+        await fetchData(true) // Force refresh to get updated data
+
         alert(`${formData.type === 'expense' ? 'Expense' : 'Income'} saved successfully!`)
       } else {
         const errorData = await response.json()
@@ -337,10 +411,10 @@ export default function MobileFinanceTracker() {
   // Show loading while checking authentication
   if (status === 'loading') {
     return (
-      <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col items-center justify-center">
+      <div className="h-screen w-full max-w-sm mx-auto overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-3"></div>
+          <p className="text-white text-base">Loading...</p>
         </div>
       </div>
     )
@@ -349,35 +423,35 @@ export default function MobileFinanceTracker() {
   // Show login screen if not authenticated
   if (status === 'unauthenticated' || !session) {
     return (
-      <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col">
+      <div className="h-screen w-full max-w-sm mx-auto overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 pt-8 w-full">
+        <div className="flex items-center justify-between p-3 w-full flex-shrink-0">
           <Bell className="w-6 h-6 text-white" />
           <UserMenu />
         </div>
 
         {/* Login Content */}
-        <div className="flex-1 bg-white rounded-t-3xl mt-4 p-6 flex flex-col items-center justify-center space-y-6">
-          <div className="text-center space-y-4 max-w-md">
-            <Wallet className="w-16 h-16 text-blue-600 mx-auto" />
-            <h1 className="text-2xl font-bold text-gray-900">
+        <div className="flex-1 bg-white rounded-t-3xl p-4 flex flex-col items-center justify-center space-y-4 overflow-y-auto">
+          <div className="text-center space-y-3 max-w-md">
+            <Wallet className="w-12 h-12 text-blue-600 mx-auto" />
+            <h1 className="text-xl font-bold text-gray-900">
               Welcome to Expense Tracker
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm">
               Please sign in with your Google account to access your personal expense data and connect to your Google Sheets.
             </p>
           </div>
-          
-          <div className="space-y-4 w-full max-w-sm">
-            <Button 
+
+          <div className="space-y-3 w-full max-w-sm">
+            <Button
               onClick={() => signIn('google')}
-              className="w-full h-12 text-lg font-medium"
+              className="w-full h-10 text-base font-medium"
             >
-              <LogIn className="w-5 h-5 mr-2" />
+              <LogIn className="w-4 h-4 mr-2" />
               Sign in with Google
             </Button>
-            
-            <div className="text-center text-sm text-gray-500">
+
+            <div className="text-center text-xs text-gray-500">
               <p>
                 Your Google account will be used to access your personal Google Sheets for storing expense and income data.
               </p>
@@ -386,21 +460,21 @@ export default function MobileFinanceTracker() {
         </div>
 
         {/* Footer */}
-        <div className="bg-blue-600 h-2"></div>
+        <div className="bg-blue-600 h-2 flex-shrink-0 mb-2"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col">
+    <div className="h-screen w-full max-w-sm mx-auto overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-8 w-full">
-        <Bell className="w-6 h-6 text-white" />
+      <div className="flex items-center justify-between p-3 w-full flex-shrink-0">
+        <Bell className="w-5 h-5 text-white" />
         <UserMenu />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-white rounded-t-3xl mt-4 p-4 sm:p-6 space-y-4 sm:space-y-6 w-full max-w-full">
+      <div className="flex-1 bg-white rounded-t-3xl mt-2 p-4 space-y-6 w-full overflow-y-auto">
 
         {/* Chart Section */}
         {!error && (
@@ -423,19 +497,19 @@ export default function MobileFinanceTracker() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="flex gap-2 sm:gap-4 p-3 sm:p-4 bg-white w-full">
-        <Button variant="neutral" className="flex-1 h-10 sm:h-12 text-sm sm:text-base">
-          <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+      <div className="flex gap-2 p-3 mb-2 bg-white w-full flex-shrink-0">
+        <Button variant="neutral" className="flex-1 h-8 text-xs">
+          <Zap className="w-3 h-3 mr-1" />
           Anggaran
         </Button>
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
           <DrawerTrigger asChild>
-            <Button variant="neutral" className="flex-1 h-10 sm:h-12 text-sm sm:text-base">
-              <Settings className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+            <Button variant="neutral" className="flex-1 h-8 text-xs">
+              <Settings className="w-3 h-3 mr-1" />
               Settings
             </Button>
           </DrawerTrigger>
-          <DrawerContent className="max-h-[80vh]">
+          <DrawerContent className="max-h-[80vh] w-full">
             <DrawerHeader>
               <DrawerTitle>Sheet Settings</DrawerTitle>
             </DrawerHeader>
@@ -456,7 +530,7 @@ export default function MobileFinanceTracker() {
       </div>
 
       {/* Footer */}
-      <div className="bg-blue-600 h-2"></div>
+      <div className="flex-shrink-0"></div>
     </div>
   )
 }
