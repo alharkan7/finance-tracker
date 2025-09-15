@@ -68,19 +68,11 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
   }
 
-  // Fetch all budget data
+  // Fetch all budget data from aggregated API
   const fetchAllBudgetData = async () => {
     try {
       setLoading(true)
-      // Fetch data for a wide date range (last 2 years to current month)
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setFullYear(startDate.getFullYear() - 2)
-
-      const startDateStr = startDate.toISOString().split('T')[0]
-      const endDateStr = endDate.toISOString().split('T')[0]
-
-      const response = await fetch(`/api/fetch-budget?startDate=${startDateStr}&endDate=${endDateStr}`)
+      const response = await fetch('/api/fetch-all-data')
 
       if (response.ok) {
         const data = await response.json()

@@ -232,40 +232,39 @@ export default function MobileFinanceTracker() {
     return nextMonth <= maxDate
   }
 
-  // Fetch all budgets and cache them
+  // Process budget data from the aggregated API response
+  const processBudgetData = (budgets: any[]) => {
+    // Group budgets by month and take the latest entry for each month
+    const budgetMap: {[key: string]: number} = {}
+
+    budgets.forEach((budget: any) => {
+      const monthKey = budget.date.substring(0, 7) // YYYY-MM format
+      if (!budgetMap[monthKey] || new Date(budget.timestamp) > new Date(budgets.find((b: any) => b.date.substring(0, 7) === monthKey)?.timestamp || 0)) {
+        budgetMap[monthKey] = budget.amount
+      }
+    })
+
+    setAllBudgets(budgetMap)
+    setBudgetsLoaded(true)
+
+    // Set current month's budget
+    const currentMonthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
+    setMonthlyBudget(budgetMap[currentMonthKey] || 0)
+  }
+
+  // Fetch all budgets and cache them (now uses data from aggregated API)
   const fetchAllBudgets = async () => {
     try {
       setBudgetLoading(true)
-      // Fetch budgets for the last 2 years to current month
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setFullYear(startDate.getFullYear() - 2)
-
-      const startDateStr = startDate.toISOString().split('T')[0]
-      const endDateStr = endDate.toISOString().split('T')[0]
-
-      const response = await fetch(`/api/fetch-budget?startDate=${startDateStr}&endDate=${endDateStr}`)
+      // Since we now get budgets from the aggregated API call in fetchData(),
+      // we need to check if we already have budget data
+      // If not, we'll make a separate call (fallback for edge cases)
+      const response = await fetch('/api/fetch-all-data')
 
       if (response.ok) {
         const data = await response.json()
         const budgets = data.budgets || []
-
-        // Group budgets by month and take the latest entry for each month
-        const budgetMap: {[key: string]: number} = {}
-
-        budgets.forEach((budget: any) => {
-          const monthKey = budget.date.substring(0, 7) // YYYY-MM format
-          if (!budgetMap[monthKey] || new Date(budget.timestamp) > new Date(budgets.find((b: any) => b.date.substring(0, 7) === monthKey)?.timestamp || 0)) {
-            budgetMap[monthKey] = budget.amount
-          }
-        })
-
-        setAllBudgets(budgetMap)
-        setBudgetsLoaded(true)
-
-        // Set current month's budget
-        const currentMonthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
-        setMonthlyBudget(budgetMap[currentMonthKey] || 0)
+        processBudgetData(budgets)
       } else {
         console.error('Failed to fetch budget data')
         setMonthlyBudget(0)
@@ -399,16 +398,12 @@ export default function MobileFinanceTracker() {
       setLoading(true)
       setError(null)
 
-      // Fetch both expenses and incomes in parallel
-      const [expensesResponse, incomesResponse] = await Promise.all([
-        fetch('/api/fetch-expenses'),
-        fetch('/api/fetch-income')
-      ])
+      // Fetch all data (expenses, incomes, budgets) in a single API call
+      const response = await fetch('/api/fetch-all-data')
 
-      // Handle expenses response
-      if (!expensesResponse.ok) {
-        const errorData = await expensesResponse.json()
-        if (expensesResponse.status === 401) {
+      if (!response.ok) {
+        const errorData = await response.json()
+        if (response.status === 401) {
           // Authentication error - user session might have expired
           setError({
             message: 'Authentication required',
@@ -420,26 +415,10 @@ export default function MobileFinanceTracker() {
         throw errorData
       }
 
-      // Handle incomes response
-      if (!incomesResponse.ok) {
-        const errorData = await incomesResponse.json()
-        if (incomesResponse.status === 401) {
-          // Authentication error - user session might have expired
-          setError({
-            message: 'Authentication required',
-            errorType: 'AUTHENTICATION_REQUIRED',
-            error: 'Your session has expired. Please sign in again.'
-          })
-          return
-        }
-        throw errorData
-      }
-
-      const expensesData = await expensesResponse.json()
-      const incomesData = await incomesResponse.json()
-
-      const expenses = expensesData.expenses || []
-      const incomes = incomesData.incomes || []
+      const data = await response.json()
+      const expenses = data.expenses || []
+      const incomes = data.incomes || []
+      const budgets = data.budgets || []
 
       // Cache the data
       setCache(CACHE_KEY_EXPENSES, expenses)
@@ -447,6 +426,11 @@ export default function MobileFinanceTracker() {
 
       setExpenses(expenses)
       setIncomes(incomes)
+
+      // Process budget data if available
+      if (budgets.length > 0) {
+        processBudgetData(budgets)
+      }
 
       // Update chart data based on current mode (using filtered data)
       const filterDataByMonthLocal = (data: any[]) => {
@@ -704,17 +688,13 @@ export default function MobileFinanceTracker() {
 
         // Refresh data to update chart
         try {
-          const [expensesResponse, incomesResponse] = await Promise.all([
-            fetch('/api/fetch-expenses'),
-            fetch('/api/fetch-income')
-          ])
+          const response = await fetch('/api/fetch-all-data')
 
-          if (expensesResponse.ok && incomesResponse.ok) {
-            const expensesData = await expensesResponse.json()
-            const incomesData = await incomesResponse.json()
-
-            const newExpenses = expensesData.expenses || []
-            const newIncomes = incomesData.incomes || []
+          if (response.ok) {
+            const data = await response.json()
+            const newExpenses = data.expenses || []
+            const newIncomes = data.incomes || []
+            const newBudgets = data.budgets || []
 
             // Update chart data only
             // Update chart data after form submission (using filtered data)
@@ -745,6 +725,10 @@ export default function MobileFinanceTracker() {
             // Update global state for balance calculation
             setExpenses(newExpenses)
             setIncomes(newIncomes)
+            // Update budget data if available
+            if (newBudgets.length > 0) {
+              processBudgetData(newBudgets)
+            }
           }
         } catch (refreshError) {
           console.error('Error refreshing data after submission:', refreshError)
@@ -903,7 +887,7 @@ export default function MobileFinanceTracker() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="flex gap-2 p-3 mb-2 bg-white w-full flex-shrink-0">
+      <div className="flex gap-2 p-3 mb-2 bg-white w-full flex-shrink-0 rounded-b-lg">
         <Button
           variant="neutral"
           className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent"
