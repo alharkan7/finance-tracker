@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { Plus, Minus, Loader2, Info, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Minus, Loader2, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface ChartData {
@@ -26,6 +26,10 @@ interface ChartProps {
   getMonthName: (month: number) => string;
   expenses: any[];
   incomes: any[];
+  monthlyBudget: number;
+  budgetLoading: boolean;
+  budgetsLoaded: boolean;
+  onOpenBudgetDrawer: () => void;
 }
 
 export function Chart({
@@ -42,7 +46,11 @@ export function Chart({
   canNavigateNext: propCanNavigateNext,
   getMonthName,
   expenses,
-  incomes
+  incomes,
+  monthlyBudget,
+  budgetLoading,
+  budgetsLoaded,
+  onOpenBudgetDrawer
 }: ChartProps) {
   // Calculate navigation limits internally to avoid infinite loops
   const getDateLimits = () => {
@@ -123,9 +131,26 @@ export function Chart({
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 break-words">
-          Rp {balance.toLocaleString('id-ID')}
-        </h1>
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 break-words">
+            Rp {balance.toLocaleString('id-ID')}
+          </h1>
+          {monthlyBudget === 0 && (
+            <button
+              onClick={onOpenBudgetDrawer}
+              className="text-blue-500 hover:text-blue-700 transition-colors"
+              title="Set budget for this month"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="text-center mt-2">
+          <p className="text-xs text-gray-500">
+            Budget: Rp {monthlyBudget.toLocaleString('id-ID')}
+            {!budgetsLoaded && <Loader2 className="inline w-3 h-3 ml-1 animate-spin" />}
+          </p>
+        </div>
       </div>
 
       {/* Donut Chart */}

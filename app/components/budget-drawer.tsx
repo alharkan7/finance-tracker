@@ -23,9 +23,11 @@ interface MonthlyBudget {
 interface BudgetDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  currentMonth?: number;
+  currentYear?: number;
 }
 
-export function BudgetDrawer({ isOpen, onClose }: BudgetDrawerProps) {
+export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, currentYear: propCurrentYear }: BudgetDrawerProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [budgetAmount, setBudgetAmount] = useState<number>(0)
   const [isEditing, setIsEditing] = useState(false)
@@ -222,6 +224,13 @@ export function BudgetDrawer({ isOpen, onClose }: BudgetDrawerProps) {
       setHasChanges(true)
     }
   }
+
+  // Update current month when props change
+  useEffect(() => {
+    if (propCurrentMonth !== undefined && propCurrentYear !== undefined) {
+      setCurrentMonth(new Date(propCurrentYear, propCurrentMonth, 1))
+    }
+  }, [propCurrentMonth, propCurrentYear])
 
   // Handle visibility with animation timing
   useEffect(() => {

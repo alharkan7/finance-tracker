@@ -141,6 +141,8 @@ export default function MobileFinanceTracker() {
   // Budget data state
   const [monthlyBudget, setMonthlyBudget] = useState<number>(0)
   const [budgetLoading, setBudgetLoading] = useState(false)
+  const [allBudgets, setAllBudgets] = useState<{[key: string]: number}>({})
+  const [budgetsLoaded, setBudgetsLoaded] = useState(false)
 
   // Budget alert dialog state
   const [isBudgetAlertOpen, setIsBudgetAlertOpen] = useState(false)
@@ -161,10 +163,10 @@ export default function MobileFinanceTracker() {
   const filteredExpenses = filterDataByMonth(expenses)
   const filteredIncomes = filterDataByMonth(incomes)
 
-  // Calculate balance from filtered data
+  // Calculate balance from filtered data: Budget - Expenses
   const totalIncome = filteredIncomes.reduce((sum, income) => sum + income.amount, 0)
   const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0)
-  const balance = totalIncome - totalExpenses
+  const balance = monthlyBudget - totalExpenses
 
   // Month navigation functions
   const getMonthName = (month: number) => {
@@ -227,6 +229,72 @@ export default function MobileFinanceTracker() {
     const { maxDate } = getDateLimits()
     const nextMonth = new Date(currentYear, currentMonth + 1, 1)
     return nextMonth <= maxDate
+  }
+
+  // Fetch all budgets and cache them
+  const fetchAllBudgets = async () => {
+    try {
+      setBudgetLoading(true)
+      // Fetch budgets for the last 2 years to current month
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setFullYear(startDate.getFullYear() - 2)
+
+      const startDateStr = startDate.toISOString().split('T')[0]
+      const endDateStr = endDate.toISOString().split('T')[0]
+
+      const response = await fetch(`/api/fetch-budget?startDate=${startDateStr}&endDate=${endDateStr}`)
+
+      if (response.ok) {
+        const data = await response.json()
+        const budgets = data.budgets || []
+
+        // Group budgets by month and take the latest entry for each month
+        const budgetMap: {[key: string]: number} = {}
+
+        budgets.forEach((budget: any) => {
+          const monthKey = budget.date.substring(0, 7) // YYYY-MM format
+          if (!budgetMap[monthKey] || new Date(budget.timestamp) > new Date(budgets.find((b: any) => b.date.substring(0, 7) === monthKey)?.timestamp || 0)) {
+            budgetMap[monthKey] = budget.amount
+          }
+        })
+
+        setAllBudgets(budgetMap)
+        setBudgetsLoaded(true)
+
+        // Set current month's budget
+        const currentMonthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
+        setMonthlyBudget(budgetMap[currentMonthKey] || 0)
+      } else {
+        console.error('Failed to fetch budget data')
+        setMonthlyBudget(0)
+        setAllBudgets({})
+        setBudgetsLoaded(true)
+      }
+    } catch (error) {
+      console.error('Error fetching budget data:', error)
+      setMonthlyBudget(0)
+      setAllBudgets({})
+      setBudgetsLoaded(true)
+    } finally {
+      setBudgetLoading(false)
+    }
+  }
+
+  // Get budget for a specific month (from cache)
+  const getBudgetForMonth = (month: number, year: number) => {
+    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
+    return allBudgets[monthKey] || 0
+  }
+
+  // Helper function to get month range
+  const getMonthRange = (date: Date) => {
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1)
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+    return {
+      firstDay: `${firstDay.getFullYear()}-${String(firstDay.getMonth() + 1).padStart(2, '0')}-${String(firstDay.getDate()).padStart(2, '0')}`,
+      lastDay: `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`
+    }
   }
 
   // Check user sheet configuration
@@ -532,6 +600,21 @@ export default function MobileFinanceTracker() {
     }
   }, [session, status])
 
+  // Fetch all budgets when user is authenticated and has sheet
+  useEffect(() => {
+    if (hasUserSheet && !loading && !budgetsLoaded) {
+      fetchAllBudgets()
+    }
+  }, [hasUserSheet, loading, budgetsLoaded])
+
+  // Update current month's budget when month changes (from cache)
+  useEffect(() => {
+    if (budgetsLoaded) {
+      const budget = getBudgetForMonth(currentMonth, currentYear)
+      setMonthlyBudget(budget)
+    }
+  }, [currentMonth, currentYear, budgetsLoaded, allBudgets])
+
   // Update chart data when mode or month changes
   useEffect(() => {
     if (expenses.length > 0 || incomes.length > 0) {
@@ -788,6 +871,10 @@ export default function MobileFinanceTracker() {
             getMonthName={getMonthName}
             expenses={expenses}
             incomes={incomes}
+            monthlyBudget={monthlyBudget}
+            budgetLoading={budgetLoading}
+            budgetsLoaded={budgetsLoaded}
+            onOpenBudgetDrawer={() => setIsBudgetDrawerOpen(true)}
           />
         )}
 
@@ -879,7 +966,16 @@ export default function MobileFinanceTracker() {
         {/* Budget Drawer */}
         <BudgetDrawer
           isOpen={isBudgetDrawerOpen}
-          onClose={() => setIsBudgetDrawerOpen(false)}
+          onClose={() => {
+            setIsBudgetDrawerOpen(false)
+            // Refresh all budget data when drawer closes
+            if (hasUserSheet && !loading) {
+              setBudgetsLoaded(false)
+              fetchAllBudgets()
+            }
+          }}
+          currentMonth={currentMonth}
+          currentYear={currentYear}
         />
       </div>
     </div>
