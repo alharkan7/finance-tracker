@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { FormExpenses } from '../components/form_expenses';
-import { FormIncome } from '../components/form_income';
-import { FormReport } from '../components/form_report';
+import { FormExpenses } from './components/form_expenses';
+import { FormIncome } from './components/form_income';
+import { FormReport } from './components/form_report';
 import { SheetsIcon, DashboardIcon } from '../components/icons';
 import { Button } from "@/components/ui/button"
 import { categories, categoriesIncome } from '@/lib/selections';
