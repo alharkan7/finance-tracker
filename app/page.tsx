@@ -8,6 +8,13 @@ import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
 import { ExpenseForm } from './components/expense-form'
 import { SheetSettings } from './components/sheet-settings'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
 
 // Types for our data
 interface ExpenseData {
@@ -56,6 +63,9 @@ export default function MobileFinanceTracker() {
   const [chartData, setChartData] = useState(mockChartData)
   const [userSheetId, setUserSheetId] = useState<string | null>(null)
   const [hasUserSheet, setHasUserSheet] = useState<boolean>(false)
+
+  // Drawer state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   
   // Calculate balance from real data
   const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
@@ -391,18 +401,6 @@ export default function MobileFinanceTracker() {
 
       {/* Main Content */}
       <div className="flex-1 bg-white rounded-t-3xl mt-4 p-4 sm:p-6 space-y-4 sm:space-y-6 w-full max-w-full">
-        
-        {/* Sheet Settings (Error Display & Management) */}
-        <SheetSettings
-          error={error}
-          userSheetId={userSheetId}
-          hasUserSheet={hasUserSheet}
-          onCreateSheet={handleCreateSheet}
-          onSetupExistingSheet={handleSetupExistingSheet}
-          onRetryFetch={fetchData}
-          onClearError={handleClearError}
-          loading={loading}
-        />
 
         {/* Chart Section */}
         {!error && (
@@ -430,10 +428,31 @@ export default function MobileFinanceTracker() {
           <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
           Anggaran
         </Button>
-        <Button variant="neutral" className="flex-1 h-10 sm:h-12 text-sm sm:text-base">
-          <Settings className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-          Setting
-        </Button>
+        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+          <DrawerTrigger asChild>
+            <Button variant="neutral" className="flex-1 h-10 sm:h-12 text-sm sm:text-base">
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+              Settings
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="max-h-[80vh]">
+            <DrawerHeader>
+              <DrawerTitle>Sheet Settings</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-4">
+              <SheetSettings
+                error={error}
+                userSheetId={userSheetId}
+                hasUserSheet={hasUserSheet}
+                onCreateSheet={handleCreateSheet}
+                onSetupExistingSheet={handleSetupExistingSheet}
+                onRetryFetch={fetchData}
+                onClearError={handleClearError}
+                loading={loading}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
 
       {/* Footer */}
