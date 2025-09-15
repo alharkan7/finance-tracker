@@ -28,7 +28,7 @@ export function UserMenu() {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 border border-white/20">
+            <Button variant="neutral" size="icon" className="text-white hover:bg-white/10 border border-white/20">
               {session.user?.image ? (
                 <img
                   src={session.user.image}
@@ -62,7 +62,7 @@ export function UserMenu() {
 
   return (
     <Button
-      variant="ghost"
+      variant="neutral"
       size="sm"
       className="text-white hover:bg-white/10 border border-white/20"
       onClick={() => signIn("google")}

@@ -1,5 +1,6 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
+import { DatabaseService } from "@/lib/database"
 
 const handler = NextAuth({
   debug: true,
@@ -48,6 +49,21 @@ const handler = NextAuth({
         account: account?.provider, 
         profile: profile?.email 
       })
+      
+      try {
+        // Save user to database on successful sign in
+        if (user?.email) {
+          const dbUser = await DatabaseService.findOrCreateUser(
+            user.email, 
+            user.image || undefined
+          )
+          console.log("User saved/found in database:", dbUser.email)
+        }
+      } catch (error) {
+        console.error("Error saving user to database:", error)
+        // Don't block sign in if database operation fails
+      }
+      
       return true
     },
   },

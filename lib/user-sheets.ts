@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { DatabaseService } from './database';
 
 interface UserSheet {
   userId: string;
@@ -9,153 +8,90 @@ interface UserSheet {
   updatedAt: string;
 }
 
-// In-memory fallback storage if file operations fail
-const memoryStorage = new Map<string, UserSheet>();
-
-// For development - use a simple JSON file storage
-// In production, you'd want to use a proper database
-const STORAGE_FILE = path.join(process.cwd(), 'data', 'user-sheets.json');
-
-// Ensure data directory exists
-const dataDir = path.dirname(STORAGE_FILE);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-// Initialize storage file if it doesn't exist or is empty
-if (!fs.existsSync(STORAGE_FILE)) {
-  console.log('Creating new user-sheets.json file');
-  fs.writeFileSync(STORAGE_FILE, JSON.stringify([], null, 2));
-} else {
-  // Check if file is empty and initialize if needed
-  try {
-    const content = fs.readFileSync(STORAGE_FILE, 'utf8');
-    if (!content.trim()) {
-      console.log('Initializing empty user-sheets.json file');
-      fs.writeFileSync(STORAGE_FILE, JSON.stringify([], null, 2));
-    }
-  } catch (error) {
-    console.error('Error checking/initializing storage file:', error);
-    fs.writeFileSync(STORAGE_FILE, JSON.stringify([], null, 2));
-  }
-}
-
 export async function getUserSheet(userId: string): Promise<UserSheet | null> {
   try {
-    const data = fs.readFileSync(STORAGE_FILE, 'utf8');
-    const userSheets: UserSheet[] = JSON.parse(data);
-    return userSheets.find(sheet => sheet.userId === userId) || null;
+    // userId is the email in our current implementation
+    const email = userId;
+    const user = await DatabaseService.findUserByEmail(email);
+    
+    if (!user || !user.sheet_id) {
+      return null;
+    }
+
+    return {
+      userId: email,
+      email: user.email,
+      sheetId: user.sheet_id,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    };
   } catch (error) {
-    console.error('Error reading user sheets from file, checking memory storage:', error);
-    // Fallback to memory storage
-    return memoryStorage.get(userId) || null;
+    console.error('Error reading user sheet from database:', error);
+    return null;
   }
 }
 
 export async function setUserSheet(userId: string, email: string, sheetId: string): Promise<UserSheet> {
   try {
     console.log('Setting user sheet for:', { userId, email, sheetId });
-    console.log('Storage file path:', STORAGE_FILE);
-    console.log('Storage file exists:', fs.existsSync(STORAGE_FILE));
     
-    let userSheets: UserSheet[] = [];
+    // userId is the email in our current implementation
+    const userEmail = userId;
+    const updatedUser = await DatabaseService.setUserSheetId(userEmail, sheetId);
     
-    // Try to read existing data
-    if (fs.existsSync(STORAGE_FILE)) {
-      try {
-        const data = fs.readFileSync(STORAGE_FILE, 'utf8');
-        console.log('Existing file content:', data);
-        
-        if (data.trim()) {
-          userSheets = JSON.parse(data);
-        }
-      } catch (parseError) {
-        console.error('Error parsing existing file:', parseError);
-        // If file is corrupted, start fresh
-        userSheets = [];
-      }
-    }
+    console.log('Successfully saved user sheet configuration to database');
     
-    const existingIndex = userSheets.findIndex(sheet => sheet.userId === userId);
-    const now = new Date().toISOString();
-    
-    const userSheet: UserSheet = {
-      userId,
-      email,
-      sheetId,
-      createdAt: existingIndex === -1 ? now : userSheets[existingIndex].createdAt,
-      updatedAt: now
+    return {
+      userId: userEmail,
+      email: updatedUser.email,
+      sheetId: updatedUser.sheet_id!,
+      createdAt: updatedUser.created_at,
+      updatedAt: updatedUser.updated_at
     };
-    
-    if (existingIndex === -1) {
-      userSheets.push(userSheet);
-      console.log('Adding new user sheet');
-    } else {
-      userSheets[existingIndex] = userSheet;
-      console.log('Updating existing user sheet');
-    }
-    
-    const jsonContent = JSON.stringify(userSheets, null, 2);
-    console.log('Writing content:', jsonContent);
-    
-    fs.writeFileSync(STORAGE_FILE, jsonContent);
-    console.log('Successfully saved user sheet configuration');
-    
-    // Also save to memory storage as backup
-    memoryStorage.set(userId, userSheet);
-    
-    return userSheet;
   } catch (error) {
-    console.error('Error saving user sheet to file:', error);
+    console.error('Error saving user sheet to database:', error);
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : 'No stack'
     });
     
-    // Fallback to memory storage
-    console.log('Falling back to memory storage');
-    const now = new Date().toISOString();
-    const userSheet: UserSheet = {
-      userId,
-      email,
-      sheetId,
-      createdAt: now,
-      updatedAt: now
-    };
-    
-    memoryStorage.set(userId, userSheet);
-    console.log('Successfully saved user sheet to memory storage');
-    
-    return userSheet;
+    throw error;
   }
 }
 
 export async function removeUserSheet(userId: string): Promise<boolean> {
   try {
-    const data = fs.readFileSync(STORAGE_FILE, 'utf8');
-    const userSheets: UserSheet[] = JSON.parse(data);
+    // userId is the email in our current implementation
+    const email = userId;
+    const user = await DatabaseService.findUserByEmail(email);
     
-    const filteredSheets = userSheets.filter(sheet => sheet.userId !== userId);
-    
-    if (filteredSheets.length === userSheets.length) {
+    if (!user || !user.sheet_id) {
       return false; // No sheet found for user
     }
     
-    fs.writeFileSync(STORAGE_FILE, JSON.stringify(filteredSheets, null, 2));
+    await DatabaseService.removeUserSheetId(email);
+    console.log('Successfully removed user sheet from database');
     return true;
   } catch (error) {
-    console.error('Error removing user sheet:', error);
+    console.error('Error removing user sheet from database:', error);
     return false;
   }
 }
 
 export async function getAllUserSheets(): Promise<UserSheet[]> {
   try {
-    const data = fs.readFileSync(STORAGE_FILE, 'utf8');
-    return JSON.parse(data);
+    const result = await DatabaseService.getUsers({ has_sheet: true });
+    
+    return result.data.map(user => ({
+      userId: user.email,
+      email: user.email,
+      sheetId: user.sheet_id!,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    }));
   } catch (error) {
-    console.error('Error reading all user sheets:', error);
+    console.error('Error reading all user sheets from database:', error);
     return [];
   }
 }
