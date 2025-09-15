@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession, signIn } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
-import { Bell, Wallet, Settings, Zap, LogIn, Loader2 } from 'lucide-react'
+import { Bell, Wallet, Settings, Zap, LogIn, Loader2, AlertTriangle } from 'lucide-react'
 import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
 import { ExpenseForm } from './components/expense-form'
@@ -15,6 +15,14 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Category } from '@/schema/schema'
 
 // Types for our data
@@ -122,6 +130,9 @@ export default function MobileFinanceTracker() {
   // Drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [drawerKey, setDrawerKey] = useState(0)
+
+  // Budget alert dialog state
+  const [isBudgetAlertOpen, setIsBudgetAlertOpen] = useState(false)
   
   // Calculate balance from real data
   const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
@@ -528,7 +539,19 @@ export default function MobileFinanceTracker() {
       <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-3 w-full flex-shrink-0">
-          <Bell className="w-5 h-5 text-white" />
+          <div className="relative">
+            <Bell
+              className="w-5 h-5 text-white cursor-pointer"
+              onClick={() => {
+                if (balance < 0) {
+                  setIsBudgetAlertOpen(true)
+                }
+              }}
+            />
+            {balance < 0 && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></div>
+            )}
+          </div>
           <UserMenu />
         </div>
 
@@ -580,7 +603,7 @@ export default function MobileFinanceTracker() {
           </DrawerTrigger>
           <DrawerContent className="max-h-[80vh] w-full flex flex-col">
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Sheet Settings</DrawerTitle>
+              <DrawerTitle>Settings</DrawerTitle>
             </DrawerHeader>
             <div className="flex-1 overflow-hidden">
               <SheetSettings
@@ -604,6 +627,27 @@ export default function MobileFinanceTracker() {
 
         {/* Footer */}
         <div className="flex-shrink-0"></div>
+
+        {/* Budget Alert Dialog */}
+        <Dialog open={isBudgetAlertOpen} onOpenChange={setIsBudgetAlertOpen}>
+          <DialogContent className="max-w-[90vw] w-full mx-auto rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-center gap-2 text-red-600 text-lg">
+                <AlertTriangle className="w-5 h-5" />
+                Budget Alert
+              </DialogTitle>
+              <DialogDescription className="text-sm space-y-2">
+                <p className="text-gray-700">Your spending has exceeded your income by:</p>
+                <p className="text-xl font-bold text-red-600">
+                  Rp {Math.abs(balance).toLocaleString('id-ID')}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  Consider reviewing your expenses to get back on track.
+                </p>
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
