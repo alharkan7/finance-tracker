@@ -64,7 +64,6 @@ export function UserMenu() {
     <Button
       variant="neutral"
       size="sm"
-      className="text-white hover:bg-white/10 border border-white/20"
       onClick={() => signIn("google")}
     >
       <User className="w-4 h-4 mr-2" />

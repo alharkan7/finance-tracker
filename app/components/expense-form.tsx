@@ -111,7 +111,7 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
   }
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4 w-full max-w-sm">
       {/* Category Buttons */}
       <div className="flex gap-2 w-full">
         <Button

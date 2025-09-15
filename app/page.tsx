@@ -412,10 +412,16 @@ export default function MobileFinanceTracker() {
   // Show loading while checking authentication
   if (status === 'loading') {
     return (
-      <div className="h-screen w-full max-w-sm mx-auto overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-3"></div>
-          <p className="text-white text-base">Loading...</p>
+      <div className="w-full relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+        {/* Full-width background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600"></div>
+
+        {/* Centered content */}
+        <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-3"></div>
+            <p className="text-white text-base">Loading...</p>
+          </div>
         </div>
       </div>
     )
@@ -424,58 +430,66 @@ export default function MobileFinanceTracker() {
   // Show login screen if not authenticated
   if (status === 'unauthenticated' || !session) {
     return (
-      <div className="h-screen w-full max-w-sm mx-auto overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 w-full flex-shrink-0">
-          <Bell className="w-6 h-6 text-white" />
-          <UserMenu />
-        </div>
+      <div className="w-full relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+        {/* Full-width background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600"></div>
 
-        {/* Login Content */}
-        <div className="flex-1 bg-white rounded-t-3xl p-4 flex flex-col items-center justify-center space-y-4 overflow-y-auto">
+        {/* Centered content */}
+        <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col">
+          {/* Header Space */}
+          <div className="p-3 w-full flex-shrink-0"></div>
+
+          {/* Login Content */}
+          <div className="flex-1 bg-white rounded-t-3xl p-4 flex flex-col items-center justify-center space-y-4 overflow-y-auto">
           <div className="text-center space-y-3 max-w-md">
-            <Wallet className="w-12 h-12 text-blue-600 mx-auto" />
+            <Wallet className="w-12 h-12 text-blue-500 mx-auto" />
             <h1 className="text-xl font-bold text-gray-900">
-              Welcome to Expense Tracker
+              Welcome to Finance Tracker
             </h1>
-            <p className="text-gray-600 text-sm">
+            {/* <p className="text-gray-600 text-sm">
               Please sign in with your Google account to access your personal expense data and connect to your Google Sheets.
-            </p>
+            </p> */}
           </div>
 
-          <div className="space-y-3 w-full max-w-sm">
+          <div className="space-y-3 w-full max-w-sm flex flex-col items-center space-y-4">
             <Button
               onClick={() => signIn('google')}
-              className="w-full h-10 text-base font-medium"
+              className="w-80 h-10 text-base font-medium"
             >
               <LogIn className="w-4 h-4 mr-2" />
               Sign in with Google
             </Button>
 
-            <div className="text-center text-xs text-gray-500">
+            <div className="text-center text-xs text-gray-500 max-w-xs">
               <p>
-                Your Google account will be used to access your personal Google Sheets for storing expense and income data.
+                Your Google account will be used to create & access your Google Sheets for your financial data.
               </p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-blue-600 h-2 flex-shrink-0 mb-2"></div>
+        <div className="h-2 flex-shrink-0"></div>
       </div>
+    </div>
     )
   }
 
   return (
-    <div className="h-screen w-full max-w-sm mx-auto overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 w-full flex-shrink-0">
-        <Bell className="w-5 h-5 text-white" />
-        <UserMenu />
-      </div>
+    <div className="w-full relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+      {/* Full-width background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600"></div>
+
+      {/* Centered content */}
+      <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 w-full flex-shrink-0">
+          <Bell className="w-5 h-5 text-white" />
+          <UserMenu />
+        </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-white rounded-t-3xl mt-2 p-4 space-y-6 w-full overflow-y-auto">
+      <div className="flex-1 bg-white rounded-t-3xl mt-2 p-4 space-y-6 w-full overflow-y-auto flex flex-col items-center">
 
         {/* Chart Section */}
         {!error && (
@@ -499,7 +513,7 @@ export default function MobileFinanceTracker() {
 
       {/* Bottom Navigation */}
       <div className="flex gap-2 p-3 mb-2 bg-white w-full flex-shrink-0">
-        <Button variant="neutral" className="flex-1 h-8 text-xs">
+        <Button variant="neutral" className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent">
           <Zap className="w-3 h-3 mr-1" />
           Anggaran
         </Button>
@@ -515,7 +529,7 @@ export default function MobileFinanceTracker() {
           }
         }}>
           <DrawerTrigger asChild>
-            <Button variant="neutral" className="flex-1 h-8 text-xs">
+            <Button variant="neutral" className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent">
               <Settings className="w-3 h-3 mr-1" />
               Settings
             </Button>
@@ -539,10 +553,11 @@ export default function MobileFinanceTracker() {
             </div>
           </DrawerContent>
         </Drawer>
-      </div>
+        </div>
 
-      {/* Footer */}
-      <div className="flex-shrink-0"></div>
+        {/* Footer */}
+        <div className="flex-shrink-0"></div>
+      </div>
     </div>
   )
 }

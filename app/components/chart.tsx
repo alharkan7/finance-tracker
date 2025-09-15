@@ -1,6 +1,7 @@
 'use client'
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { Plus, Minus } from 'lucide-react'
 
 interface ChartData {
   name: string;
@@ -27,15 +28,21 @@ export function Chart({ data, totalIncome, totalExpenses, balance, loading }: Ch
   }
 
   return (
-    <div className="text-center space-y-2 w-full">
+    <div className="text-center space-y-2 w-full max-w-sm">
       <div>
         <p className="text-gray-600 text-sm">Saldo saat ini</p>
         <h1 className="text-2xl font-bold text-gray-900 break-words">
           Rp {balance.toLocaleString('id-ID')}
         </h1>
         <div className="flex justify-center gap-4 mt-2 text-sm">
-          <span className="text-green-600">Income: Rp {totalIncome.toLocaleString('id-ID')}</span>
-          <span className="text-red-600">Expenses: Rp {totalExpenses.toLocaleString('id-ID')}</span>
+          <span className="text-green-600 flex items-center gap-1">
+            <Plus className="w-4 h-4" />
+            {totalIncome.toLocaleString('id-ID')}
+          </span>
+          <span className="text-red-600 flex items-center gap-1">
+            <Minus className="w-4 h-4" />
+            {totalExpenses.toLocaleString('id-ID')}
+          </span>
         </div>
       </div>
 

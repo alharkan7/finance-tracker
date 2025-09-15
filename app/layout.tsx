@@ -35,6 +35,19 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              function setVH() {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', vh + 'px');
+              }
+              setVH();
+              window.addEventListener('resize', setVH);
+              window.addEventListener('orientationchange', setVH);
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased w-full max-w-full`}
