@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       const createResponse = await userSheets.spreadsheets.create({
         requestBody: {
           properties: {
-            title: 'My Expense Tracker',
+            title: 'My Finance Tracker',
           },
           sheets: [
             {

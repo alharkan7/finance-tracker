@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AlertCircle, Plus, Share, Copy, LogIn, Check, ExternalLink, CheckCircle, Pencil, Save, X, Smile, ChevronDown, ChevronUp } from 'lucide-react'
 import { Category } from '@/schema/schema'
+import { toast } from "sonner"
 
 interface SheetError {
   message: string;
@@ -191,10 +192,10 @@ export function SheetSettings({
         throw new Error('Failed to save settings')
       }
 
-      alert('Settings saved successfully!')
+      toast.success('Settings saved successfully!')
     } catch (error) {
       console.error('Error saving settings:', error)
-      alert('Failed to save settings')
+      toast.error('Failed to save settings')
     } finally {
       setSaving(false)
     }

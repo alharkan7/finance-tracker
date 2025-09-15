@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, TrendingUp, TrendingDown, Wallet, Loader2 } from 'lucide-react'
 import { convertDatabaseCategoriesToForm, FormCategory } from '@/lib/icon-mapper'
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 // Indonesian month names
 const indonesianMonths = [
@@ -47,6 +48,11 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
   const [expenseCategories, setExpenseCategories] = useState<FormCategory[]>([])
   const [incomeCategories, setIncomeCategories] = useState<FormCategory[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [validationErrors, setValidationErrors] = useState({
+    amount: false,
+    category: false,
+    date: false
+  })
 
   // Fetch user categories
   const fetchUserCategories = async () => {
@@ -101,29 +107,52 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
 
   const handleSave = async () => {
     if (categoriesLoading) {
-      alert('Please wait for categories to load')
+      toast.warning('Please wait for categories to load')
       return
     }
 
     const currentCategories = activeCategory === 'expense' ? expenseCategories : incomeCategories
     if (currentCategories.length === 0 && !categoriesLoading) {
-      alert('No categories available. Please try refreshing the page.')
+      toast.error('No categories available. Please try refreshing the page.')
       return
     }
 
+    // Clear previous validation errors
+    setValidationErrors({ amount: false, category: false, date: false })
+
     // Validate required fields
+    const errors = { amount: false, category: false, date: false }
     const missingFields = []
-    if (!amount.trim()) missingFields.push('Amount')
-    if (!selectedCategory) missingFields.push('Category')
-    if (!date) missingFields.push('Date')
+
+    // Validate amount
+    const amountValue = parseFloat(amount)
+    if (!amount.trim() || isNaN(amountValue) || amountValue <= 0) {
+      errors.amount = true
+      missingFields.push('Amount (must be greater than 0)')
+    }
+
+    // Validate category
+    if (!selectedCategory) {
+      errors.category = true
+      missingFields.push('Category')
+    }
+
+    // Validate date
+    if (!date) {
+      errors.date = true
+      missingFields.push('Date')
+    }
+
+    // Set validation errors
+    setValidationErrors(errors)
 
     if (missingFields.length > 0) {
-      alert(`Please fill in the required fields: ${missingFields.join(', ')}`)
+      toast.warning(`Please fill in the required fields: ${missingFields.join(', ')}`)
       return
     }
 
     const formData: FormData = {
-      amount: parseFloat(amount),
+      amount: amountValue,
       category: selectedCategory,
       date: format(date, 'yyyy-MM-dd'),
       note: note || '',
@@ -138,6 +167,7 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
       setSelectedCategory('')
       setDate(new Date()) // Reset to today's date
       setNote('')
+      setValidationErrors({ amount: false, category: false, date: false })
     } catch (error) {
       // Error handling is done in the parent component
       console.error('Form submission error:', error)
@@ -155,6 +185,8 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
             setActiveCategory('income')
             setSelectedCategory('') // Clear selected category when switching
             setDate(new Date()) // Set date to today when switching to income
+            // Clear validation errors when switching categories
+            setValidationErrors({ amount: false, category: false, date: false })
           }}
         >
           <TrendingUp className="w-3 h-3 mr-1" />
@@ -167,6 +199,8 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
             setActiveCategory('expense')
             setSelectedCategory('') // Clear selected category when switching
             setDate(new Date()) // Set date to today when switching to expense
+            // Clear validation errors when switching categories
+            setValidationErrors({ amount: false, category: false, date: false })
           }}
         >
           <TrendingDown className="w-3 h-3 mr-1" />
@@ -194,9 +228,25 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
                 const numericValue = e.target.value.replace(/\./g, '');
                 if (/^\d*$/.test(numericValue)) {
                   setAmount(numericValue);
+                  // Clear amount validation error when user starts typing or clears the field
+                  if (validationErrors.amount) {
+                    setValidationErrors(prev => ({ ...prev, amount: false }))
+                  }
                 }
               }}
-              className="text-xl h-[3rem] leading-[3rem] font-medium border-0 border-b border-secondary-foreground/50 rounded-none focus:placeholder:opacity-0 focus:border-opacity-0 focus:outline-none focus:ring-0 px-0 placeholder:text-secondary-foreground/50 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full pl-[3rem] bg-transparent"
+              onBlur={() => {
+                // Validate amount on blur - ensure it's not zero or negative
+                const numValue = parseFloat(amount);
+                if (amount && (isNaN(numValue) || numValue <= 0)) {
+                  setValidationErrors(prev => ({ ...prev, amount: true }))
+                }
+              }}
+              className={cn(
+                "text-xl h-[3rem] leading-[3rem] font-medium border-0 border-b rounded-none focus:placeholder:opacity-0 focus:border-opacity-0 focus:outline-none focus:ring-0 px-0 placeholder:text-secondary-foreground/50 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full pl-[3rem] bg-transparent transition-colors",
+                validationErrors.amount
+                  ? "border-red-500 focus:border-red-500"
+                  : "border-secondary-foreground/50"
+              )}
             />
           </div>
         </div>
@@ -205,8 +255,23 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
         <div className="flex gap-4 w-full">
           {/* Category Select */}
           <div className="flex-1">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={categoriesLoading}>
-              <SelectTrigger className="flex items-center gap-2 w-full px-0 py-2 text-sm text-left bg-transparent border-0 border-b border-secondary-foreground/50 rounded-none focus:outline-none focus:ring-0 hover:bg-transparent focus:border-secondary-foreground disabled:opacity-50">
+            <Select
+              value={selectedCategory}
+              onValueChange={(value) => {
+                setSelectedCategory(value)
+                // Clear category validation error when user selects a category
+                if (validationErrors.category) {
+                  setValidationErrors(prev => ({ ...prev, category: false }))
+                }
+              }}
+              disabled={categoriesLoading}
+            >
+              <SelectTrigger className={cn(
+              "flex items-center gap-2 w-full px-0 py-2 text-sm text-left bg-transparent border-0 border-b rounded-none focus:outline-none focus:ring-0 hover:bg-transparent disabled:opacity-50 transition-colors",
+              validationErrors.category
+                ? "border-red-500 focus:border-red-500"
+                : "border-secondary-foreground/50 focus:border-secondary-foreground"
+            )}>
                 <div className="flex items-center gap-2">
                   {selectedCategory ? (
                     (() => {
@@ -252,7 +317,12 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
           <div className="flex-1">
             <Popover>
               <PopoverTrigger asChild>
-                <button className="flex items-center gap-2 w-full h-10 px-0 py-2 text-sm text-left bg-transparent border-0 border-b border-secondary-foreground/50 rounded-none focus:outline-none focus:ring-0 hover:bg-transparent focus:border-secondary-foreground">
+                <button className={cn(
+                  "flex items-center gap-2 w-full h-10 px-0 py-2 text-sm text-left bg-transparent border-0 border-b rounded-none focus:outline-none focus:ring-0 hover:bg-transparent transition-colors",
+                  validationErrors.date
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-secondary-foreground/50 focus:border-secondary-foreground"
+                )}>
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4 flex-shrink-0" />
                     <span className={cn("truncate", !date && "text-secondary-foreground/50")}>
@@ -265,7 +335,15 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(day) => day && setDate(day)}
+                  onSelect={(day) => {
+                    if (day) {
+                      setDate(day)
+                      // Clear date validation error when user selects a date
+                      if (validationErrors.date) {
+                        setValidationErrors(prev => ({ ...prev, date: false }))
+                      }
+                    }
+                  }}
                   initialFocus
                 />
               </PopoverContent>
