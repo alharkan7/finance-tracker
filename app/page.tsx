@@ -123,6 +123,7 @@ export default function MobileFinanceTracker() {
   const [error, setError] = useState<SheetError | null>(null)
   const [chartData, setChartData] = useState(mockChartData)
   const [chartMode, setChartMode] = useState<'income' | 'expense'>('expense')
+  const [chartType, setChartType] = useState<'donut' | 'line'>('donut')
   const [userSheetId, setUserSheetId] = useState<string | null>(null)
   const [hasUserSheet, setHasUserSheet] = useState<boolean>(false)
 
@@ -486,6 +487,11 @@ export default function MobileFinanceTracker() {
     setChartMode(category)
   }
 
+  // Handle chart type switch
+  const handleChartTypeSwitch = (type: 'donut' | 'line') => {
+    setChartType(type)
+  }
+
   // Handle sheet creation
   const handleCreateSheet = async () => {
     try {
@@ -813,7 +819,7 @@ export default function MobileFinanceTracker() {
 
             <div className="text-center text-xs text-gray-500 max-w-xs">
               <p>
-                Your Google account will be used to create & access your Google Sheets for your financial data.
+                Your Google account will be used to create and edit your personal Google Sheets for storing your data.
               </p>
             </div>
           </div>
@@ -863,9 +869,11 @@ export default function MobileFinanceTracker() {
             balance={balance}
             loading={loading}
             mode={chartMode}
+            chartType={chartType}
             currentMonth={currentMonth}
             currentYear={currentYear}
             onNavigateMonth={navigateMonth}
+            onChartTypeSwitch={handleChartTypeSwitch}
             canNavigatePrev={false}
             canNavigateNext={false}
             getMonthName={getMonthName}

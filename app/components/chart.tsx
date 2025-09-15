@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import React, { useState } from 'react'
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { Plus, Minus, Loader2, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
@@ -18,9 +18,11 @@ interface ChartProps {
   balance: number;
   loading: boolean;
   mode?: 'income' | 'expense';
+  chartType?: 'donut' | 'line';
   currentMonth: number;
   currentYear: number;
   onNavigateMonth: (direction: 'prev' | 'next') => void;
+  onChartTypeSwitch: (type: 'donut' | 'line') => void;
   canNavigatePrev: boolean;
   canNavigateNext: boolean;
   getMonthName: (month: number) => string;
@@ -39,9 +41,11 @@ export function Chart({
   balance,
   loading,
   mode = 'expense',
+  chartType = 'donut',
   currentMonth,
   currentYear,
   onNavigateMonth,
+  onChartTypeSwitch,
   canNavigatePrev: propCanNavigatePrev,
   canNavigateNext: propCanNavigateNext,
   getMonthName,
@@ -82,6 +86,46 @@ export function Chart({
 
   const canNavigatePrevInternal = prevMonth >= minDate
   const canNavigateNextInternal = nextMonth <= maxDate
+
+  // Prepare line chart data (daily aggregation)
+  const prepareLineChartData = () => {
+    const dataToUse = mode === 'expense' ? expenses : incomes
+    const filteredData = dataToUse.filter(item => {
+      if (!item.date) return false
+      const itemDate = new Date(item.date)
+      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+    })
+
+    // Group by day
+    const dailyTotals: { [key: string]: number } = {}
+    filteredData.forEach(item => {
+      const date = new Date(item.date)
+      const dayKey = date.getDate()
+      dailyTotals[dayKey] = (dailyTotals[dayKey] || 0) + item.amount
+    })
+
+    // Create array of all days in the month
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+    const lineData = []
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      lineData.push({
+        day: day,
+        amount: dailyTotals[day] || 0,
+        date: day
+      })
+    }
+
+    return lineData
+  }
+
+  const lineChartData = prepareLineChartData()
+
+  // Debug: log line chart data
+  React.useEffect(() => {
+    console.log('Line chart data:', lineChartData)
+    console.log('Line chart data length:', lineChartData.length)
+  }, [lineChartData])
   const [selectedSegment, setSelectedSegment] = useState<ChartData | null>(null)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
@@ -117,7 +161,7 @@ export function Chart({
             <ChevronLeft className="w-4 h-4" />
           </button>
           <p className="text-gray-600 text-sm">
-            Saldo {getMonthName(currentMonth)} {currentYear}
+            {chartType === 'donut' ? 'Saldo' : 'Trend'} {getMonthName(currentMonth)} {currentYear}
           </p>
           <button
             onClick={() => onNavigateMonth('next')}
@@ -131,75 +175,180 @@ export function Chart({
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        <div className="flex items-center justify-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900 break-words">
-            Rp {balance.toLocaleString('id-ID')}
-          </h1>
-          {monthlyBudget === 0 && (
-            <button
-              onClick={onOpenBudgetDrawer}
-              className="text-blue-500 hover:text-blue-700 transition-colors"
-              title="Set budget for this month"
-            >
-              <Info className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <div className="text-center mt-2">
-          <p className="text-xs text-gray-500">
-            Budget: Rp {monthlyBudget.toLocaleString('id-ID')}
-            {!budgetsLoaded && <Loader2 className="inline w-3 h-3 ml-1 animate-spin" />}
-          </p>
-        </div>
+        {chartType === 'donut' && (
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900 break-words">
+              Rp {balance.toLocaleString('id-ID')}
+            </h1>
+            {monthlyBudget === 0 && (
+              <button
+                onClick={onOpenBudgetDrawer}
+                className="text-blue-500 hover:text-blue-700 transition-colors"
+                title="Set budget for this month"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+        {chartType === 'donut' && (
+          <div className="text-center mt-2">
+            <p className="text-xs text-gray-500">
+              Budget: Rp {monthlyBudget.toLocaleString('id-ID')}
+              {!budgetsLoaded && <Loader2 className="inline w-3 h-3 ml-1 animate-spin" />}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Donut Chart */}
-      <div className="h-48 w-48 mx-auto max-w-full relative">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={90}
-              dataKey="value"
-              onClick={handlePieClick}
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={entry.color}
-                  style={{ cursor: 'pointer' }}
-                />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+      {/* Chart Container */}
+      <div className="h-48 w-full mx-auto max-w-full relative">
+        {/* Chart Type Navigation */}
+        {chartType === 'line' && (
+          <button
+            onClick={() => onChartTypeSwitch('donut')}
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 p-1 text-gray-600 hover:text-gray-800 transition-colors"
+            title="Switch to Chart view"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+        {chartType === 'donut' && (
+          <button
+            onClick={() => onChartTypeSwitch('line')}
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 p-1 text-gray-600 hover:text-gray-800 transition-colors"
+            title="Switch to Trend view"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
 
-        {/* Invisible trigger for popover positioning */}
-        <div className="absolute opacity-0 pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-            <PopoverTrigger asChild>
-              <button className="w-0 h-0" />
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-4 bg-white rounded-xl shadow-lg border" side="top" align="center">
-              {selectedSegment && (
-                <div className="text-center space-y-2">
-                  <div className="font-medium text-sm text-gray-900">
-                    {selectedSegment.name}
-                  </div>
-                  <div className="text-lg font-bold text-gray-900">
-                    Rp {selectedSegment.value.toLocaleString('id-ID')}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {((selectedSegment.value / (mode === 'expense' ? totalExpenses : totalIncome)) * 100).toFixed(1)}% of {mode === 'expense' ? 'Expenses' : 'Income'}
-                  </div>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
-        </div>
+        {chartType === 'donut' ? (
+          <div className="h-48 w-48 mx-auto max-w-full relative rounded-lg overflow-hidden">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  dataKey="value"
+                  onClick={handlePieClick}
+                >
+                  {data.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  ))}
+                </Pie>
+              </RechartsPieChart>
+            </ResponsiveContainer>
+
+            {/* Invisible trigger for popover positioning */}
+            <div className="absolute opacity-0 pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button className="w-0 h-0" />
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4 bg-white rounded-xl shadow-lg border" side="top" align="center">
+                  {selectedSegment && (
+                    <div className="text-center space-y-2">
+                      <div className="font-medium text-sm text-gray-900">
+                        {selectedSegment.name}
+                      </div>
+                      <div className="text-lg font-bold text-gray-900">
+                        Rp {selectedSegment.value.toLocaleString('id-ID')}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {((selectedSegment.value / (mode === 'expense' ? totalExpenses : totalIncome)) * 100).toFixed(1)}% of {mode === 'expense' ? 'Expenses' : 'Income'}
+                      </div>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg mt-4">
+            {lineChartData && lineChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                <LineChart
+                  data={lineChartData}
+                  margin={{
+                    top: 5,
+                    right: 20,
+                    left: 10,
+                    bottom: 5,
+                  }}
+                >
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length && label) {
+                    const value = payload[0].value as number
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                    const formattedDate = `${parseInt(label.toString())} ${monthNames[currentMonth]}`
+
+                    return (
+                      <div style={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        padding: '12px',
+                        fontSize: '12px'
+                      }}>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          color: '#374151',
+                          marginBottom: '4px'
+                        }}>
+                          {value.toLocaleString('id-ID')}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#6b7280'
+                        }}>
+                          {formattedDate}
+                        </div>
+                      </div>
+                    )
+                  }
+                  return null
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="amount"
+                stroke={mode === 'expense' ? '#ef4444' : '#10b981'}
+                strokeWidth={2}
+                dot={{ fill: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5, stroke: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2 }}
+              />
+              </LineChart>
+            </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                No data available for this month
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Chart Legend */}
