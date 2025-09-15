@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { CalendarIcon, Bell, User, Wallet, Settings, TrendingUp, Zap, TrendingDown } from 'lucide-react'
+import { CalendarIcon, Bell, Wallet, Settings, TrendingUp, Zap, TrendingDown } from 'lucide-react'
+import { UserMenu } from './components/user-menu'
 import { categories, categoriesIncome } from '@/lib/selections'
 import { cn } from "@/lib/utils"
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
@@ -36,7 +37,7 @@ export default function MobileFinanceTracker() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-8 w-full">
         <Bell className="w-6 h-6 text-white" />
-        <User className="w-6 h-6 text-white" />
+        <UserMenu />
       </div>
 
       {/* Main Content */}
