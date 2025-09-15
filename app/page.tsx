@@ -845,8 +845,14 @@ export default function MobileFinanceTracker() {
             <Bell
               className="w-5 h-5 text-white cursor-pointer"
               onClick={() => {
-                if (balance < 0) {
+                console.log('Bell clicked, balance:', balance, 'monthlyBudget:', monthlyBudget, 'totalExpenses:', totalExpenses, 'isNaN(balance):', isNaN(balance))
+                if (balance < 0 && !isNaN(balance)) {
                   setIsBudgetAlertOpen(true)
+                } else if (!isNaN(balance)) {
+                  console.log('Showing toast message')
+                  toast.success("No issue. Everything is fine! 👍")
+                } else {
+                  console.log('Balance is NaN, not showing anything')
                 }
               }}
             />
