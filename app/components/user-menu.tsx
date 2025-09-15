@@ -40,7 +40,7 @@ export function UserMenu() {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuContent align="end" className="w-64 z-[9999] bg-white border border-gray-200 shadow-lg">
             {/* User info in dropdown */}
             <div className="px-3 py-2 text-sm border-b border-border">
               <div className="font-medium">{session.user?.name || 'User'}</div>

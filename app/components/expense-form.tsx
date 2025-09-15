@@ -1,17 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
-import { categories, categoriesIncome } from '@/lib/selections'
+import { convertDatabaseCategoriesToForm, FormCategory } from '@/lib/icon-mapper'
 import { cn } from "@/lib/utils"
+
+// Indonesian month names
+const indonesianMonths = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+]
+
+// Format date in Indonesian format: "D MMM YYYY" (e.g., "7 Agu 2025")
+function formatIndonesianDate(date: Date): string {
+  const day = date.getDate()
+  const month = indonesianMonths[date.getMonth()]
+  const year = date.getFullYear()
+  return `${day} ${month} ${year}`
+}
 
 interface ExpenseFormProps {
   onSubmit: (data: FormData) => Promise<void>;
@@ -30,12 +41,50 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
   const [activeCategory, setActiveCategory] = useState<'income' | 'expense'>('expense')
   const [amount, setAmount] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
-  const [date, setDate] = useState<Date>()
+  const [date, setDate] = useState<Date>(new Date()) // Initialize with today's date
   const [note, setNote] = useState('')
+  const [expenseCategories, setExpenseCategories] = useState<FormCategory[]>([])
+  const [incomeCategories, setIncomeCategories] = useState<FormCategory[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
+
+  // Fetch user categories
+  const fetchUserCategories = async () => {
+    try {
+      const response = await fetch('/api/user-categories')
+      if (response.ok) {
+        const data = await response.json()
+        const expenseCats = convertDatabaseCategoriesToForm(data.expense_categories || [])
+        const incomeCats = convertDatabaseCategoriesToForm(data.income_categories || [])
+        setExpenseCategories(expenseCats)
+        setIncomeCategories(incomeCats)
+      } else {
+        console.error('Failed to fetch user categories')
+      }
+    } catch (error) {
+      console.error('Error fetching user categories:', error)
+    } finally {
+      setCategoriesLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchUserCategories()
+  }, [])
 
   const handleSave = async () => {
-    if (!amount || !selectedCategory || !date) {
-      alert('Please fill in all required fields')
+    if (categoriesLoading) {
+      alert('Please wait for categories to load')
+      return
+    }
+
+    // Validate required fields
+    const missingFields = []
+    if (!amount.trim()) missingFields.push('Amount')
+    if (!selectedCategory) missingFields.push('Category')
+    if (!date) missingFields.push('Date')
+
+    if (missingFields.length > 0) {
+      alert(`Please fill in the required fields: ${missingFields.join(', ')}`)
       return
     }
 
@@ -53,7 +102,7 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
       // Reset form after successful submission
       setAmount('')
       setSelectedCategory('')
-      setDate(undefined)
+      setDate(new Date()) // Reset to today's date
       setNote('')
     } catch (error) {
       // Error handling is done in the parent component
@@ -68,7 +117,11 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
         <Button
           variant={activeCategory === 'expense' ? "default" : "neutral"}
           className="flex-1 h-8 text-xs"
-          onClick={() => setActiveCategory('expense')}
+          onClick={() => {
+            setActiveCategory('expense')
+            setSelectedCategory('') // Clear selected category when switching
+            setDate(new Date()) // Set date to today when switching to expense
+          }}
         >
           <TrendingDown className="w-3 h-3 mr-1" />
           Pengeluaran
@@ -76,7 +129,11 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
         <Button
           variant={activeCategory === 'income' ? "default" : "neutral"}
           className="flex-1 h-8 text-xs"
-          onClick={() => setActiveCategory('income')}
+          onClick={() => {
+            setActiveCategory('income')
+            setSelectedCategory('') // Clear selected category when switching
+            setDate(new Date()) // Set date to today when switching to income
+          }}
         >
           <TrendingUp className="w-3 h-3 mr-1" />
           Pemasukan
@@ -113,12 +170,12 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
         <div className="flex gap-4 w-full">
           {/* Category Select */}
           <div className="flex-1">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="flex items-center gap-2 w-full px-0 py-2 text-sm text-left bg-transparent border-0 border-b border-secondary-foreground/50 rounded-none focus:outline-none focus:ring-0 hover:bg-transparent focus:border-secondary-foreground">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={categoriesLoading}>
+              <SelectTrigger className="flex items-center gap-2 w-full px-0 py-2 text-sm text-left bg-transparent border-0 border-b border-secondary-foreground/50 rounded-none focus:outline-none focus:ring-0 hover:bg-transparent focus:border-secondary-foreground disabled:opacity-50">
                 <div className="flex items-center gap-2">
                   {selectedCategory ? (
                     (() => {
-                      const category = (activeCategory === 'expense' ? categories : categoriesIncome)
+                      const category = (activeCategory === 'expense' ? expenseCategories : incomeCategories)
                         .find(cat => cat.value === selectedCategory);
                       return category ? (
                         <>
@@ -130,13 +187,15 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
                   ) : (
                     <>
                       <div className="w-4 h-4 rounded-full border border-secondary-foreground/50 flex-shrink-0" />
-                      <span className="text-secondary-foreground/50">Kategori</span>
+                      <span className="text-secondary-foreground/50">
+                        {categoriesLoading ? 'Loading...' : 'Kategori'}
+                      </span>
                     </>
                   )}
                 </div>
               </SelectTrigger>
               <SelectContent className="w-full">
-                {(activeCategory === 'expense' ? categories : categoriesIncome).map((category) => (
+                {(activeCategory === 'expense' ? expenseCategories : incomeCategories).map((category) => (
                   <SelectItem key={category.value} value={category.value}>
                     <div className="flex items-center gap-2">
                       <category.icon className="w-4 h-4 flex-shrink-0" />
@@ -156,7 +215,7 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4 flex-shrink-0" />
                     <span className={cn("truncate", !date && "text-secondary-foreground/50")}>
-                      {date ? format(date, "PPP") : "Tanggal"}
+                      {date ? formatIndonesianDate(date) : "Tanggal"}
                     </span>
                   </div>
                 </button>
@@ -165,7 +224,7 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={setDate}
+                  onSelect={(day) => day && setDate(day)}
                   initialFocus
                 />
               </PopoverContent>

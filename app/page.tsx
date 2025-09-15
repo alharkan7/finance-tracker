@@ -115,6 +115,7 @@ export default function MobileFinanceTracker() {
 
   // Drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [drawerKey, setDrawerKey] = useState(0)
   
   // Calculate balance from real data
   const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
@@ -502,7 +503,17 @@ export default function MobileFinanceTracker() {
           <Zap className="w-3 h-3 mr-1" />
           Anggaran
         </Button>
-        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <Drawer open={isDrawerOpen} onOpenChange={(open) => {
+          setIsDrawerOpen(open)
+          // Clear SHEET_MANAGEMENT error when drawer closes
+          if (!open && error?.errorType === 'SHEET_MANAGEMENT') {
+            setError(null)
+          }
+          // Reset drawer key to remount SheetSettings component and clear management state
+          if (!open) {
+            setDrawerKey(prev => prev + 1)
+          }
+        }}>
           <DrawerTrigger asChild>
             <Button variant="neutral" className="flex-1 h-8 text-xs">
               <Settings className="w-3 h-3 mr-1" />
@@ -515,6 +526,7 @@ export default function MobileFinanceTracker() {
             </DrawerHeader>
             <div className="px-4 pb-4">
               <SheetSettings
+                key={drawerKey}
                 error={error}
                 userSheetId={userSheetId}
                 hasUserSheet={hasUserSheet}

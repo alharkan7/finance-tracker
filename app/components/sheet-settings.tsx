@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Plus, Share, LogIn, Copy, ExternalLink, CheckCircle } from 'lucide-react'
@@ -35,6 +35,7 @@ export function SheetSettings({
   loading
 }: SheetSettingsProps) {
   const [copiedEmail, setCopiedEmail] = useState(false)
+  const [showManagement, setShowManagement] = useState(false)
 
   // Copy service account email to clipboard
   const copyServiceAccountEmail = async (email: string) => {
@@ -61,7 +62,7 @@ export function SheetSettings({
   }
 
   // Show user sheet info when connected
-  if (!error && hasUserSheet) {
+  if (!error && hasUserSheet && !showManagement) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
         <div className="flex items-center justify-between">
@@ -71,10 +72,10 @@ export function SheetSettings({
               Connected to your personal Google Sheet
             </span>
           </div>
-          <Button 
-            variant="neutral" 
-            size="sm" 
-            onClick={onClearError}
+          <Button
+            variant="neutral"
+            size="sm"
+            onClick={() => setShowManagement(true)}
             className="text-xs"
             disabled={loading}
           >
@@ -86,6 +87,49 @@ export function SheetSettings({
             ID: {userSheetId.substring(0, 20)}...
           </p>
         )}
+      </div>
+    )
+  }
+
+  // Show management interface
+  if (showManagement && hasUserSheet) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-blue-800">Sheet Management</h3>
+            <Button
+              variant="neutral"
+              size="sm"
+              onClick={() => setShowManagement(false)}
+              className="text-xs"
+              disabled={loading}
+            >
+              Back
+            </Button>
+          </div>
+          <div className="space-y-2">
+            <Button onClick={onCreateSheet} className="w-full" size="sm" disabled={loading}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create New Sheet
+            </Button>
+            <Button onClick={onSetupExistingSheet} variant="neutral" className="w-full" size="sm" disabled={loading}>
+              <Share className="w-4 h-4 mr-2" />
+              Connect Different Sheet
+            </Button>
+            {userSheetId && (
+              <Button
+                onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${userSheetId}`, '_blank')}
+                variant="neutral"
+                className="w-full"
+                size="sm"
+                disabled={loading}
+              >
+                Open Current Sheet
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     )
   }
@@ -387,32 +431,6 @@ export function SheetSettings({
             </div>
           )}
 
-          {error.errorType === 'SHEET_MANAGEMENT' && (
-            <div className="space-y-2">
-              <Button onClick={onCreateSheet} className="w-full" size="sm" disabled={loading}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Sheet
-              </Button>
-              <Button onClick={onSetupExistingSheet} variant="neutral" className="w-full" size="sm" disabled={loading}>
-                <Share className="w-4 h-4 mr-2" />
-                Connect Different Sheet
-              </Button>
-              {userSheetId && (
-                <Button 
-                  onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${userSheetId}`, '_blank')}
-                  variant="neutral" 
-                  className="w-full" 
-                  size="sm"
-                  disabled={loading}
-                >
-                  Open Current Sheet
-                </Button>
-              )}
-              <Button onClick={onClearError} variant="neutral" className="w-full" size="sm" disabled={loading}>
-                Cancel
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </div>
