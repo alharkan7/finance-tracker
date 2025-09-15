@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession, signIn } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
 import { Bell, Wallet, Settings, Zap, LogIn, Loader2, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
 import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
 import { ExpenseForm } from './components/expense-form'
@@ -117,8 +118,10 @@ export default function MobileFinanceTracker() {
   const [expenses, setExpenses] = useState<ExpenseData[]>([])
   const [incomes, setIncomes] = useState<IncomeData[]>([])
   const [loading, setLoading] = useState(true)
+  const [formLoading, setFormLoading] = useState(false)
   const [error, setError] = useState<SheetError | null>(null)
   const [chartData, setChartData] = useState(mockChartData)
+  const [chartMode, setChartMode] = useState<'income' | 'expense'>('expense')
   const [userSheetId, setUserSheetId] = useState<string | null>(null)
   const [hasUserSheet, setHasUserSheet] = useState<boolean>(false)
 
@@ -205,7 +208,21 @@ export default function MobileFinanceTracker() {
           console.log('Using cached data')
           setExpenses(expensesCache!.data)
           setIncomes(incomesCache!.data)
-          updateChartData(expensesCache!.data)
+          // Set chart data directly from cache
+          const dataToUse = chartMode === 'expense' ? expensesCache!.data : incomesCache!.data
+          const categoryTotals: { [key: string]: number } = {}
+          dataToUse.forEach(item => {
+            if (item.category && item.amount) {
+              categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount
+            }
+          })
+          const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
+          const newChartData = Object.entries(categoryTotals).map(([name, value], index) => ({
+            name,
+            value,
+            color: colors[index % colors.length]
+          }))
+          setChartData(newChartData.length > 0 ? newChartData : mockChartData)
           setLoading(false)
           return
         }
@@ -263,8 +280,21 @@ export default function MobileFinanceTracker() {
       setExpenses(expenses)
       setIncomes(incomes)
 
-      // Update chart data based on expense categories
-      updateChartData(expenses)
+      // Update chart data based on current mode
+      const dataToUse = chartMode === 'expense' ? expenses : incomes
+      const categoryTotals: { [key: string]: number } = {}
+      dataToUse.forEach((item: any) => {
+        if (item.category && item.amount) {
+          categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount
+        }
+      })
+      const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
+      const newChartData = Object.entries(categoryTotals).map(([name, value], index) => ({
+        name,
+        value,
+        color: colors[index % colors.length]
+      }))
+      setChartData(newChartData.length > 0 ? newChartData : mockChartData)
 
     } catch (err: any) {
       console.error('Error fetching data:', err)
@@ -274,24 +304,9 @@ export default function MobileFinanceTracker() {
     }
   }
 
-  // Update chart data based on expenses
-  const updateChartData = (expensesData: ExpenseData[]) => {
-    const categoryTotals: { [key: string]: number } = {}
-    
-    expensesData.forEach(expense => {
-      if (expense.category && expense.amount) {
-        categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount
-      }
-    })
-
-    const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
-    const newChartData = Object.entries(categoryTotals).map(([name, value], index) => ({
-      name,
-      value,
-      color: colors[index % colors.length]
-    }))
-
-    setChartData(newChartData.length > 0 ? newChartData : mockChartData)
+  // Handle category switch from form
+  const handleCategorySwitch = (category: 'income' | 'expense') => {
+    setChartMode(category)
   }
 
   // Handle sheet creation
@@ -328,7 +343,7 @@ export default function MobileFinanceTracker() {
           // Everything worked perfectly
           clearCache() // Clear old cache since we have new sheet
           setError(null)
-          alert(`🎉 Sheet created and configured successfully! Your personal expense tracker is ready.`)
+          toast.success("🎉 Sheet created and configured successfully! Your personal expense tracker is ready.")
           // Refresh data after successful creation
           await fetchData(true)
         }
@@ -337,7 +352,7 @@ export default function MobileFinanceTracker() {
       }
     } catch (err: any) {
       console.error('Error creating sheet:', err)
-      alert(`Error creating sheet: ${err.error || err.message}`)
+      toast.error(`Error creating sheet: ${err.error || err.message}`)
     } finally {
       setLoading(false)
     }
@@ -365,7 +380,7 @@ export default function MobileFinanceTracker() {
         setUserSheetId(sheetId)
         setError(null)
 
-        alert('🎉 Sheet setup successfully! Permissions automatically granted. Your personal expense tracker is ready.')
+        toast.success("🎉 Sheet setup successfully! Permissions automatically granted. Your personal expense tracker is ready.")
         // Refresh data after successful setup
         await fetchData(true)
       } else {
@@ -373,7 +388,7 @@ export default function MobileFinanceTracker() {
       }
     } catch (err: any) {
       console.error('Error setting up sheet:', err)
-      alert(`Error setting up sheet: ${err.error || err.message}`)
+      toast.error(`Error setting up sheet: ${err.error || err.message}`)
     } finally {
       setLoading(false)
     }
@@ -408,6 +423,26 @@ export default function MobileFinanceTracker() {
     }
   }, [session, status])
 
+  // Update chart data when mode changes
+  useEffect(() => {
+    if (expenses.length > 0 || incomes.length > 0) {
+      const dataToUse = chartMode === 'expense' ? expenses : incomes
+      const categoryTotals: { [key: string]: number } = {}
+      dataToUse.forEach((item: any) => {
+        if (item.category && item.amount) {
+          categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount
+        }
+      })
+      const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
+      const newChartData = Object.entries(categoryTotals).map(([name, value], index) => ({
+        name,
+        value,
+        color: colors[index % colors.length]
+      }))
+      setChartData(newChartData.length > 0 ? newChartData : mockChartData)
+    }
+  }, [chartMode, expenses, incomes])
+
   // Automatically open sheet settings if no sheet is configured
   useEffect(() => {
     if (status === 'authenticated' && !hasUserSheet && !loading) {
@@ -424,9 +459,9 @@ export default function MobileFinanceTracker() {
     type: 'expense' | 'income';
   }) => {
     try {
-      setLoading(true)
+      setFormLoading(true)
       const endpoint = formData.type === 'expense' ? '/api/submit-expense' : '/api/submit-income'
-      
+
       const payload = {
         timestamp: new Date().toISOString(),
         date: formData.date,
@@ -445,21 +480,59 @@ export default function MobileFinanceTracker() {
       })
 
       if (response.ok) {
-        // Clear cache and refresh data to get latest state
+        // Clear cache and refresh only chart data to get latest state
         clearCache()
-        await fetchData(true) // Force refresh to get updated data
 
-        alert(`${formData.type === 'expense' ? 'Expense' : 'Income'} saved successfully!`)
+        // Refresh data to update chart
+        try {
+          const [expensesResponse, incomesResponse] = await Promise.all([
+            fetch('/api/fetch-expenses'),
+            fetch('/api/fetch-income')
+          ])
+
+          if (expensesResponse.ok && incomesResponse.ok) {
+            const expensesData = await expensesResponse.json()
+            const incomesData = await incomesResponse.json()
+
+            const newExpenses = expensesData.expenses || []
+            const newIncomes = incomesData.incomes || []
+
+            // Update chart data only
+            // Update chart data after form submission
+            const dataToUse = chartMode === 'expense' ? newExpenses : newIncomes
+            const categoryTotals: { [key: string]: number } = {}
+            dataToUse.forEach((item: any) => {
+              if (item.category && item.amount) {
+                categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount
+              }
+            })
+            const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
+            const newChartData = Object.entries(categoryTotals).map(([name, value], index) => ({
+              name,
+              value,
+              color: colors[index % colors.length]
+            }))
+            setChartData(newChartData.length > 0 ? newChartData : mockChartData)
+            // Update global state for balance calculation
+            setExpenses(newExpenses)
+            setIncomes(newIncomes)
+          }
+        } catch (refreshError) {
+          console.error('Error refreshing data after submission:', refreshError)
+          // Still show success toast even if refresh fails
+        }
+
+        toast.success(`${formData.type === 'expense' ? 'Expense' : 'Income'} saved successfully!`)
       } else {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to save data')
       }
     } catch (err: any) {
       console.error('Error saving data:', err)
-      alert(`Error saving data: ${err.message}`)
+      toast.error(`Error saving data: ${err.message}`)
       throw err // Re-throw to let form component handle it
     } finally {
-      setLoading(false)
+      setFormLoading(false)
     }
   }
 
@@ -566,6 +639,7 @@ export default function MobileFinanceTracker() {
             totalExpenses={totalExpenses}
             balance={balance}
             loading={loading}
+            mode={chartMode}
           />
         )}
 
@@ -573,7 +647,8 @@ export default function MobileFinanceTracker() {
         {!loading && !error && (
           <ExpenseForm
             onSubmit={handleFormSubmit}
-            loading={loading}
+            loading={formLoading}
+            onCategorySwitch={handleCategorySwitch}
           />
         )}
       </div>

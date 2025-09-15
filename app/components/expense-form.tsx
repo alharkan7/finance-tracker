@@ -27,6 +27,7 @@ function formatIndonesianDate(date: Date): string {
 interface ExpenseFormProps {
   onSubmit: (data: FormData) => Promise<void>;
   loading: boolean;
+  onCategorySwitch?: (category: 'income' | 'expense') => void;
 }
 
 interface FormData {
@@ -37,7 +38,7 @@ interface FormData {
   type: 'expense' | 'income';
 }
 
-export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
+export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseFormProps) {
   const [activeCategory, setActiveCategory] = useState<'income' | 'expense'>('expense')
   const [amount, setAmount] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -91,6 +92,13 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
     fetchUserCategories()
   }, [])
 
+  // Notify parent component when category switches
+  useEffect(() => {
+    if (onCategorySwitch) {
+      onCategorySwitch(activeCategory)
+    }
+  }, [activeCategory, onCategorySwitch])
+
   const handleSave = async () => {
     if (categoriesLoading) {
       alert('Please wait for categories to load')
@@ -124,7 +132,7 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
 
     try {
       await onSubmit(formData)
-      
+
       // Reset form after successful submission
       setAmount('')
       setSelectedCategory('')
@@ -141,18 +149,6 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
       {/* Category Buttons */}
       <div className="flex gap-2 w-full">
         <Button
-          variant={activeCategory === 'expense' ? "default" : "neutral"}
-          className="flex-1 h-8 text-xs"
-          onClick={() => {
-            setActiveCategory('expense')
-            setSelectedCategory('') // Clear selected category when switching
-            setDate(new Date()) // Set date to today when switching to expense
-          }}
-        >
-          <TrendingDown className="w-3 h-3 mr-1" />
-          Pengeluaran
-        </Button>
-        <Button
           variant={activeCategory === 'income' ? "default" : "neutral"}
           className="flex-1 h-8 text-xs"
           onClick={() => {
@@ -164,6 +160,19 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
           <TrendingUp className="w-3 h-3 mr-1" />
           Pemasukan
         </Button>
+        <Button
+          variant={activeCategory === 'expense' ? "default" : "neutral"}
+          className="flex-1 h-8 text-xs"
+          onClick={() => {
+            setActiveCategory('expense')
+            setSelectedCategory('') // Clear selected category when switching
+            setDate(new Date()) // Set date to today when switching to expense
+          }}
+        >
+          <TrendingDown className="w-3 h-3 mr-1" />
+          Pengeluaran
+        </Button>
+
       </div>
 
       {/* Input Form */}
@@ -285,7 +294,11 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
           disabled={loading}
           className="w-full h-8 text-sm font-medium"
         >
-          <Wallet className="w-3 h-3 mr-1" />
+          {loading ? (
+            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+          ) : (
+            <Wallet className="w-3 h-3 mr-1" />
+          )}
           {loading ? 'Saving...' : 'Save'}
         </Button>
       </div>
