@@ -38,3 +38,6 @@ next-env.d.ts
 
 # google sheets credentials
 /lib/credentials.json
+
+# user data storage
+/data/

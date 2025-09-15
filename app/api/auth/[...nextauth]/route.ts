@@ -9,7 +9,7 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: "openid email profile",
+          scope: "openid email profile https://www.googleapis.com/auth/spreadsheets",
           prompt: "consent",
           access_type: "offline",
           response_type: "code"

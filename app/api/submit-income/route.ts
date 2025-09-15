@@ -1,8 +1,51 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { getServerSession } from "next-auth/next";
+import GoogleProvider from "next-auth/providers/google";
+import { getUserSheet, getUserId } from '@/lib/user-sheets';
+
+const authOptions = {
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: "openid email profile https://www.googleapis.com/auth/spreadsheets",
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        },
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, account, user }: any) {
+      if (account) {
+        token.accessToken = account.access_token
+      }
+      return token
+    },
+    async session({ session, token }: any) {
+      session.accessToken = token.accessToken
+      return session
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+}
 
 export async function POST(req: Request) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json({
+        message: 'Unauthorized',
+        error: 'You must be logged in to submit income'
+      }, { status: 401 });
+    }
+
     const body = await req.json();
     const { timestamp, subject, date, amount, category, description } = body;
 
@@ -15,7 +58,19 @@ export async function POST(req: Request) {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
-    const sheetId = process.env.GOOGLE_SHEETS_ID; // Replace with your Google Sheets ID
+    // Get user-specific sheet ID
+    const userId = getUserId(session);
+    const userSheet = await getUserSheet(userId);
+
+    if (!userSheet) {
+      return NextResponse.json({
+        message: 'Sheet not configured',
+        errorType: 'SHEET_NOT_CONFIGURED',
+        error: 'No Google Sheet configured for your account. Please set up a sheet first.'
+      }, { status: 400 });
+    }
+
+    const sheetId = userSheet.sheetId;
     const range = 'Incomes!A:E'; // Change this to 'Sheet1!A1:E1' for appending on new row
 
     await sheets.spreadsheets.values.append({
