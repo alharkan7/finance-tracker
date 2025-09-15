@@ -1,333 +1,208 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { FormExpenses } from './components/form_expenses';
-import { FormIncome } from './components/form_income';
-import { FormReport } from './components/form_report';
-import { SheetsIcon, DashboardIcon } from './components/icons';
+import { useState } from 'react'
 import { Button } from "@/components/ui/button"
-import { categories, categoriesIncome } from '@/lib/selections';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { CalendarIcon, Bell, User, Wallet, Settings, TrendingUp, Zap, TrendingDown } from 'lucide-react'
+import { categories, categoriesIncome } from '@/lib/selections'
+import { cn } from "@/lib/utils"
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 
-interface ExpenseData {
-  timestamp: string;
-  subject: string;
-  date: string;
-  amount: number;
-  category: string;
-  description: string;
-  reimbursed: string;
-}
+// Mock data for the donut chart
+const mockChartData = [
+  { name: 'Food', value: 400, color: '#0088FE' },
+  { name: 'Transport', value: 300, color: '#00C49F' },
+  { name: 'Entertainment', value: 200, color: '#FFBB28' },
+  { name: 'Others', value: 100, color: '#FF8042' },
+]
 
-interface IncomeData {
-  timestamp: string;
-  subject: string;
-  date: string;
-  amount: number;
-  category: string;
-  description: string;
-}
-
-export default function FinanceTrackerPage() {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [subjectValue, setSubjectValue] = useState('');
-  const [amountValue, setAmountValue] = useState('');
-  const [categoryValue, setCategoryValue] = useState('');
-  const [descriptionValue, setDescriptionValue] = useState('');
-  const [reimburseValue, setReimburseValue] = useState('FALSE');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [showValidation, setShowValidation] = useState(false);
-  const [activeTab, setActiveTab] = useState('expense');
-
-  // Report data state
-  const [expenses, setExpenses] = useState<ExpenseData[]>([]);
-  const [incomes, setIncomes] = useState<IncomeData[]>([]);
-  const [reportLoading, setReportLoading] = useState(false);
-  const [reportError, setReportError] = useState<string | null>(null);
-  const [dataLoaded, setDataLoaded] = useState(false);
-
-  const timestamp = (() => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-
-    return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
-  })();
-
-  // Fetch report data
-  const fetchReportData = useCallback(async () => {
-    if (dataLoaded) return; // Don't fetch if data is already loaded
-
-    setReportLoading(true);
-    setReportError(null);
-    try {
-      const [expensesRes, incomesRes] = await Promise.all([
-        fetch('/api/fetch-expenses'),
-        fetch('/api/fetch-income')
-      ]);
-
-      if (!expensesRes.ok || !incomesRes.ok) {
-        throw new Error('Failed to fetch data');
-      }
-
-      const expensesData = await expensesRes.json();
-      const incomesData = await incomesRes.json();
-
-      setExpenses(expensesData.expenses || []);
-      setIncomes(incomesData.incomes || []);
-      setDataLoaded(true);
-    } catch (err) {
-      setReportError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setReportLoading(false);
-    }
-  }, [dataLoaded]);
-
-  // Fetch data when component mounts
-  useEffect(() => {
-    fetchReportData();
-  }, [fetchReportData]);
-
-  // Refresh report data
-  const refreshReportData = async () => {
-    setDataLoaded(false);
-    await fetchReportData();
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowValidation(true);
-
-    // Validate required fields
-    if (!subjectValue || !categoryValue) {
-      // setFeedbackMessage('Please fill in all required fields');
-      setTimeout(() => {
-        setFeedbackMessage('');
-      }, 3000);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setFeedbackMessage(`Submitting ${activeTab === 'expense' ? 'Expense' : 'Income'}...`);
-
-    try {
-      // Find the selected category to get its label
-      const categoryArray = activeTab === 'expense' ? categories : categoriesIncome;
-      const selectedCategory = categoryArray.find(cat => cat.value === categoryValue);
-      const description = descriptionValue.trim() || selectedCategory?.label || categoryValue;
-
-      const response = await fetch(`/api/submit-${activeTab}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          timestamp,
-          date,
-          subject: subjectValue,
-          amount: parseFloat(amountValue),
-          category: categoryValue,
-          description,
-          reimbursed: reimburseValue,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to submit ${activeTab}`);
-      }
-
-      // Reset form
-      setDate(new Date().toISOString().split('T')[0]);
-      setSubjectValue('');
-      setAmountValue('');
-      setCategoryValue('');
-      setDescriptionValue('');
-      setReimburseValue('FALSE');
-      setShowValidation(false);
-      setFeedbackMessage(`${activeTab === 'expense' ? 'Expense' : 'Income'} Submitted Successfully!`);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setFeedbackMessage('');
-      }, 3000);
-    } catch (error) {
-      console.error('Error:', error);
-      setFeedbackMessage(`Failed to submit ${activeTab}. Please try again.`);
-
-      // Clear error message after 3 seconds
-      setTimeout(() => {
-        setFeedbackMessage('');
-      }, 3000);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+export default function MobileFinanceTracker() {
+  const [activeCategory, setActiveCategory] = useState<'income' | 'expense'>('expense')
+  const [amount, setAmount] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [date, setDate] = useState<Date>()
+  const [note, setNote] = useState('')
+  
+  const balance = 1000000 // Mock balance in Rupiah
 
   return (
-    <div className="h-[100vh] flex flex-col items-center justify-center">
-        <div className="w-full max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 py-2 px-4">
-        <div className="max-w-sm mx-auto relative bg-card py-6 px-0 rounded-sm">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 pt-8 w-full">
+        <Bell className="w-6 h-6 text-white" />
+        <User className="w-6 h-6 text-white" />
+      </div>
 
-          <div className="text-center py-6 items-center">
-            <h2 className="text-2xl font-bold inline-flex items-center gap-2">
-              Finance Tracker
-            </h2>
-            {feedbackMessage && (
-              <div className={`mt-4 px-3 py-1 text-sm font-medium rounded-md ${feedbackMessage.toLowerCase().includes('successfully')
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : feedbackMessage.includes('Submitting')
-                  ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                  : 'bg-red-50 text-red-800 border border-red-200'
-                }`}>
-                {feedbackMessage}
-              </div>
-            )}
+      {/* Main Content */}
+      <div className="flex-1 bg-white rounded-t-3xl mt-4 p-4 sm:p-6 space-y-4 sm:space-y-6 w-full max-w-full">
+        
+        {/* Balance Section */}
+        <div className="text-center space-y-4 w-full">
+          <div>
+            <p className="text-gray-600 text-sm">Saldo saat ini</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">
+              Rp {balance.toLocaleString('id-ID')}
+            </h1>
           </div>
-          <div className="py-4 px-0">
-            <Tabs
-              defaultValue="expense"
-              className="w-full"
-              onValueChange={(value: string) => {
-                setActiveTab(value);
-                if (value !== 'report') {
-                  setDate(new Date().toISOString().split('T')[0]);
-                  setSubjectValue('');
-                  setAmountValue('');
-                  setCategoryValue('');
-                  setDescriptionValue('');
-                  if (value === 'expense') {
-                    setReimburseValue('FALSE');
-                  }
-                  setShowValidation(false);
-                }
-              }}
-            >
-              <TabsList className="grid w-full grid-cols-3 bg-bg text-text">
-                <TabsTrigger
-                  value="expense"
-                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
+          
+          {/* Donut Chart */}
+          <div className="h-40 w-40 sm:h-48 sm:w-48 mx-auto max-w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={mockChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={70}
+                  dataKey="value"
                 >
-                  Expense
-                </TabsTrigger>
-                <TabsTrigger
-                  value="income"
-                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
-                >
-                  Income
-                </TabsTrigger>
-                <TabsTrigger
-                  value="report"
-                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
-                >
-                  Reports
-                </TabsTrigger>
-              </TabsList>
-              <AnimatePresence initial={false}>
-                <TabsContent key="expense" value="expense">
-                  <motion.div
-                    key="expense-motion"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2 }}
-                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
-                  >
-                    <FormExpenses
-                      date={date}
-                      setDate={setDate}
-                      subjectValue={subjectValue}
-                      setSubjectValue={setSubjectValue}
-                      amountValue={amountValue}
-                      setAmountValue={setAmountValue}
-                      categoryValue={categoryValue}
-                      setCategoryValue={setCategoryValue}
-                      descriptionValue={descriptionValue}
-                      setDescriptionValue={setDescriptionValue}
-                      reimburseValue={reimburseValue}
-                      setReimburseValue={setReimburseValue}
-                      isSubmitting={isSubmitting}
-                      handleSubmit={handleSubmit}
-                      showValidation={showValidation}
-                    />
-                  </motion.div>
-                </TabsContent>
-                <TabsContent key="income" value="income">
-                  <motion.div
-                    key="expense-motion"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2 }}
-                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
-                  >
-                    <FormIncome
-                      date={date}
-                      setDate={setDate}
-                      subjectValue={subjectValue}
-                      setSubjectValue={setSubjectValue}
-                      amountValue={amountValue}
-                      setAmountValue={setAmountValue}
-                      categoryValue={categoryValue}
-                      setCategoryValue={setCategoryValue}
-                      descriptionValue={descriptionValue}
-                      setDescriptionValue={setDescriptionValue}
-                      isSubmitting={isSubmitting}
-                      handleSubmit={handleSubmit}
-                      showValidation={showValidation}
-                    />
-                  </motion.div>
-                </TabsContent>
-                <TabsContent key="report" value="report">
-                  <motion.div
-                    key="report-motion"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2 }}
-                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
-                  >
-                    <FormReport
-                      expenses={expenses}
-                      incomes={incomes}
-                      loading={reportLoading}
-                      error={reportError}
-                      onRefresh={refreshReportData}
-                    />
-                  </motion.div>
-                </TabsContent>
-              </AnimatePresence>
-            </Tabs>
-            <div className="flex justify-between mt-4 gap-4">
-              <Button
-                type="button"
-                variant='neutral'
-                className="w-1/2 gap-2"
-                onClick={() => window.location.href = process.env.NEXT_PUBLIC_SHEETS_URL || "https://bit.ly/pocket-tracker-sheet"}
-              >
-                <SheetsIcon />
-                Sheets
-              </Button>
-              <Button
-                type="button"
-                variant='neutral'
-                className="w-1/2 gap-2"
-                onClick={() => window.location.href = process.env.NEXT_PUBLIC_DASHBOARD_URL || "https://bit.ly/pocket-tracker-dashboard"}
-              >
-                <DashboardIcon />
-                Dashboard
-              </Button>
-            </div>
+                  {mockChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Category Buttons */}
+        <div className="flex gap-2 sm:gap-3 w-full">
+          <Button
+            variant={activeCategory === 'expense' ? "default" : "neutral"}
+            className="flex-1 h-10 sm:h-12 text-sm sm:text-base"
+            onClick={() => setActiveCategory('expense')}
+          >
+            <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            Pengeluaran
+          </Button>
+          <Button
+            variant={activeCategory === 'income' ? "default" : "neutral"}
+            className="flex-1 h-10 sm:h-12 text-sm sm:text-base"
+            onClick={() => setActiveCategory('income')}
+          >
+            <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            Pemasukan
+          </Button>
+        </div>
+
+        {/* Input Form */}
+        <div className="space-y-3 sm:space-y-4 w-full">
+          {/* Amount Input */}
+          <div className="w-full">
+            <Label htmlFor="amount" className="text-sm font-medium text-gray-700">
+              Nominal
+            </Label>
+            <div className="mt-1 relative w-full">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm sm:text-base">
+                Rp
+              </span>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="pl-8 h-10 sm:h-12 text-base sm:text-lg w-full"
+              />
+            </div>
+          </div>
+
+          {/* Category Select */}
+          <div className="w-full">
+            <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+              Kategori
+            </Label>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="mt-1 h-10 sm:h-12 w-full">
+                <SelectValue placeholder="Pilih kategori" />
+              </SelectTrigger>
+              <SelectContent className="w-full">
+                {(activeCategory === 'expense' ? categories : categoriesIncome).map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    <div className="flex items-center gap-2">
+                      <category.icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{category.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date Picker */}
+          <div className="w-full">
+            <Label className="text-sm font-medium text-gray-700">
+              Tanggal
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="neutral"
+                  className={cn(
+                    "w-full mt-1 h-10 sm:h-12 justify-start text-left font-normal text-sm sm:text-base",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">
+                    {date ? format(date, "PPP") : "Pilih tanggal"}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Note Input */}
+          <div className="w-full">
+            <Label htmlFor="note" className="text-sm font-medium text-gray-700">
+              Catatan
+            </Label>
+            <Textarea
+              id="note"
+              placeholder="Tambahkan catatan..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="mt-1 min-h-[60px] sm:min-h-[80px] w-full resize-none"
+            />
+          </div>
+
+          {/* Save Button */}
+          <Button className="w-full h-10 sm:h-12 text-base sm:text-lg font-medium">
+            <Wallet className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+            Save
+          </Button>
+        </div>
       </div>
-      <div className="fixed bottom-0 left-0 right-0 py-1 text-center text-xs bg-background">
+
+      {/* Bottom Navigation */}
+      <div className="flex gap-2 sm:gap-4 p-3 sm:p-4 bg-white w-full">
+        <Button variant="neutral" className="flex-1 h-10 sm:h-12 text-sm sm:text-base">
+          <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+          Anggaran
+        </Button>
+        <Button variant="neutral" className="flex-1 h-10 sm:h-12 text-sm sm:text-base">
+          <Settings className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+          Setting
+        </Button>
       </div>
+
+      {/* Footer */}
+      <div className="bg-blue-600 h-2"></div>
     </div>
-  );
+  )
 }
