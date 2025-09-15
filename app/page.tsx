@@ -930,6 +930,7 @@ export default function MobileFinanceTracker() {
                 onSetupExistingSheet={handleSetupExistingSheet}
                 onRetryFetch={fetchData}
                 onClearError={handleClearError}
+                onSheetIdUpdate={() => fetchData(true)}
                 loading={loading}
               />
             </div>

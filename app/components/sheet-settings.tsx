@@ -28,6 +28,7 @@ interface SettingsProps {
   onSetupExistingSheet: () => Promise<void>;
   onRetryFetch: () => Promise<void>;
   onClearError: () => void;
+  onSheetIdUpdate?: () => void;
   loading: boolean;
 }
 
@@ -42,6 +43,7 @@ export function SheetSettings({
   onSetupExistingSheet,
   onRetryFetch,
   onClearError,
+  onSheetIdUpdate,
   loading
 }: SettingsProps) {
   const [copiedEmail, setCopiedEmail] = useState(false)
@@ -93,6 +95,12 @@ export function SheetSettings({
 
       if (!response.ok) {
         throw new Error('Failed to update sheet ID')
+      }
+
+      // Trigger data refresh in parent component
+      if (onSheetIdUpdate) {
+        onSheetIdUpdate()
+        toast.success('Sheet ID updated successfully! Refreshing data...')
       }
     } catch (error) {
       console.error('Error updating sheet ID:', error)
