@@ -9,6 +9,9 @@ interface UserSheet {
   updatedAt: string;
 }
 
+// In-memory fallback storage if file operations fail
+const memoryStorage = new Map<string, UserSheet>();
+
 // For development - use a simple JSON file storage
 // In production, you'd want to use a proper database
 const STORAGE_FILE = path.join(process.cwd(), 'data', 'user-sheets.json');
@@ -19,9 +22,22 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// Initialize storage file if it doesn't exist
+// Initialize storage file if it doesn't exist or is empty
 if (!fs.existsSync(STORAGE_FILE)) {
+  console.log('Creating new user-sheets.json file');
   fs.writeFileSync(STORAGE_FILE, JSON.stringify([], null, 2));
+} else {
+  // Check if file is empty and initialize if needed
+  try {
+    const content = fs.readFileSync(STORAGE_FILE, 'utf8');
+    if (!content.trim()) {
+      console.log('Initializing empty user-sheets.json file');
+      fs.writeFileSync(STORAGE_FILE, JSON.stringify([], null, 2));
+    }
+  } catch (error) {
+    console.error('Error checking/initializing storage file:', error);
+    fs.writeFileSync(STORAGE_FILE, JSON.stringify([], null, 2));
+  }
 }
 
 export async function getUserSheet(userId: string): Promise<UserSheet | null> {
@@ -30,15 +46,35 @@ export async function getUserSheet(userId: string): Promise<UserSheet | null> {
     const userSheets: UserSheet[] = JSON.parse(data);
     return userSheets.find(sheet => sheet.userId === userId) || null;
   } catch (error) {
-    console.error('Error reading user sheets:', error);
-    return null;
+    console.error('Error reading user sheets from file, checking memory storage:', error);
+    // Fallback to memory storage
+    return memoryStorage.get(userId) || null;
   }
 }
 
 export async function setUserSheet(userId: string, email: string, sheetId: string): Promise<UserSheet> {
   try {
-    const data = fs.readFileSync(STORAGE_FILE, 'utf8');
-    const userSheets: UserSheet[] = JSON.parse(data);
+    console.log('Setting user sheet for:', { userId, email, sheetId });
+    console.log('Storage file path:', STORAGE_FILE);
+    console.log('Storage file exists:', fs.existsSync(STORAGE_FILE));
+    
+    let userSheets: UserSheet[] = [];
+    
+    // Try to read existing data
+    if (fs.existsSync(STORAGE_FILE)) {
+      try {
+        const data = fs.readFileSync(STORAGE_FILE, 'utf8');
+        console.log('Existing file content:', data);
+        
+        if (data.trim()) {
+          userSheets = JSON.parse(data);
+        }
+      } catch (parseError) {
+        console.error('Error parsing existing file:', parseError);
+        // If file is corrupted, start fresh
+        userSheets = [];
+      }
+    }
     
     const existingIndex = userSheets.findIndex(sheet => sheet.userId === userId);
     const now = new Date().toISOString();
@@ -53,15 +89,45 @@ export async function setUserSheet(userId: string, email: string, sheetId: strin
     
     if (existingIndex === -1) {
       userSheets.push(userSheet);
+      console.log('Adding new user sheet');
     } else {
       userSheets[existingIndex] = userSheet;
+      console.log('Updating existing user sheet');
     }
     
-    fs.writeFileSync(STORAGE_FILE, JSON.stringify(userSheets, null, 2));
+    const jsonContent = JSON.stringify(userSheets, null, 2);
+    console.log('Writing content:', jsonContent);
+    
+    fs.writeFileSync(STORAGE_FILE, jsonContent);
+    console.log('Successfully saved user sheet configuration');
+    
+    // Also save to memory storage as backup
+    memoryStorage.set(userId, userSheet);
+    
     return userSheet;
   } catch (error) {
-    console.error('Error saving user sheet:', error);
-    throw new Error('Failed to save user sheet configuration');
+    console.error('Error saving user sheet to file:', error);
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack'
+    });
+    
+    // Fallback to memory storage
+    console.log('Falling back to memory storage');
+    const now = new Date().toISOString();
+    const userSheet: UserSheet = {
+      userId,
+      email,
+      sheetId,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    memoryStorage.set(userId, userSheet);
+    console.log('Successfully saved user sheet to memory storage');
+    
+    return userSheet;
   }
 }
 

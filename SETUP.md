@@ -31,33 +31,39 @@ NEXTAUTH_URL=http://localhost:3000
 
 ## Setup Process
 
-### Option 1: Create New Sheet (Recommended)
+### Option 1: Automatic Setup (Recommended) ✨
 1. Sign in to the app with your Google account
 2. Click "Create New Sheet" when prompted
-3. The app automatically creates a personal Google Sheet for you
-4. Your sheet ID is saved to your user profile
-5. Start tracking expenses immediately!
+3. **The app automatically:**
+   - Creates a personal Google Sheet for you
+   - Grants the service account access permissions
+   - Sets up proper sheet structure
+   - Saves your sheet ID to your profile
+4. Start tracking expenses immediately!
 
 ### Option 2: Use Existing Sheet
 1. Create or use an existing Google Sheet
-2. Share it with the service account: `expense-tracker@hobby-project-435405.iam.gserviceaccount.com`
-3. Give "Editor" permissions to the service account
-4. In the app, click "Use Existing Sheet" and enter your Sheet ID
-5. The app will set up the required tabs and headers
-6. Your sheet ID is saved to your user profile
+2. In the app, click "Use Existing Sheet" and enter your Sheet ID
+3. **The app automatically:**
+   - Tries to grant service account access permissions
+   - Sets up the required tabs and headers
+   - Saves your sheet ID to your profile
+4. If automatic permissions fail, manual sharing instructions will appear
 
-## ⚠️ Important: Service Account Access
+## 🚀 Automatic Permission Management
 
-The app uses a service account (`expense-tracker@hobby-project-435405.iam.gserviceaccount.com`) to access Google Sheets. **You must grant this service account access to your sheets.**
+**New Feature:** The app now automatically handles service account permissions!
 
-### When you'll see access prompts:
-- **Creating new sheets**: Service account needs permission to create spreadsheets
-- **Accessing existing sheets**: Service account needs "Editor" access to your specific sheet
+### How it works:
+- **OAuth Integration**: Uses your Google account to automatically grant permissions
+- **No Manual Sharing**: No need to manually share sheets with the service account
+- **Seamless Experience**: Just click "Create New Sheet" and everything is set up automatically
 
-### How to grant access:
+### Fallback Process:
+If automatic permissions fail, the app will show manual instructions:
+
 1. **Copy service account email**: `expense-tracker@hobby-project-435405.iam.gserviceaccount.com`
-2. **For new sheets**: The app will guide you through the process
-3. **For existing sheets**: 
+2. **Manual sharing steps**:
    - Open your Google Sheet
    - Click "Share" button 
    - Paste the service account email

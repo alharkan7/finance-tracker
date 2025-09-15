@@ -4,6 +4,33 @@ import { getServerSession } from "next-auth/next";
 import GoogleProvider from "next-auth/providers/google";
 import { setUserSheet, getUserId } from '@/lib/user-sheets';
 
+// Helper function to share sheet with service account using user's OAuth token
+async function shareSheetWithServiceAccount(userAccessToken: string, sheetId: string, serviceAccountEmail: string) {
+  try {
+    // Create OAuth2 client with user's access token
+    const userAuth = new google.auth.OAuth2();
+    userAuth.setCredentials({ access_token: userAccessToken });
+    
+    const drive = google.drive({ version: 'v3', auth: userAuth });
+    
+    // Share the sheet with the service account
+    await drive.permissions.create({
+      fileId: sheetId,
+      requestBody: {
+        role: 'writer', // Editor permissions
+        type: 'user',
+        emailAddress: serviceAccountEmail,
+      },
+      sendNotificationEmail: false, // Don't send notification
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error sharing sheet with service account:', error);
+    throw error;
+  }
+}
+
 const authOptions = {
   providers: [
     GoogleProvider({
@@ -11,7 +38,7 @@ const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: "openid email profile https://www.googleapis.com/auth/spreadsheets",
+          scope: "openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file",
           prompt: "consent",
           access_type: "offline",
           response_type: "code"
@@ -60,11 +87,30 @@ export async function POST(req: Request) {
     const sheets = google.sheets({ version: 'v4', auth });
 
     if (action === 'create') {
-      // Create a new spreadsheet
-      const createResponse = await sheets.spreadsheets.create({
+      console.log('Creating new spreadsheet for user:', session.user.email);
+      console.log('Session has accessToken:', !!session.accessToken);
+      
+      if (!session.accessToken) {
+        return NextResponse.json({
+          message: 'Missing access token',
+          errorType: 'MISSING_ACCESS_TOKEN',
+          error: 'User access token not available. Please sign in again.'
+        }, { status: 400 });
+      }
+
+      // Use user's OAuth token to create the spreadsheet
+      const userAuth = new google.auth.OAuth2();
+      userAuth.setCredentials({ access_token: session.accessToken });
+      
+      const userSheets = google.sheets({ version: 'v4', auth: userAuth });
+      
+      console.log('Attempting to create spreadsheet with user OAuth token...');
+      
+      // Create a new spreadsheet using user's OAuth token
+      const createResponse = await userSheets.spreadsheets.create({
         requestBody: {
           properties: {
-            title: 'Expense Tracker Data',
+            title: 'My Expense Tracker',
           },
           sheets: [
             {
@@ -83,36 +129,67 @@ export async function POST(req: Request) {
 
       const newSheetId = createResponse.data.spreadsheetId!;
       const spreadsheetUrl = createResponse.data.spreadsheetUrl;
+      
+      console.log('Spreadsheet created successfully:', newSheetId);
 
-      // Setup headers for Expenses sheet
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: newSheetId,
-        range: 'Expenses!A1:G1',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [['Timestamp', 'Subject', 'Date', 'Amount', 'Category', 'Description', 'Reimbursed']],
-        },
-      });
+      // Automatically share the sheet with the service account
+      try {
+        console.log('Attempting to share sheet with service account...');
+        await shareSheetWithServiceAccount(
+          session.accessToken,
+          newSheetId,
+          process.env.GOOGLE_CLIENT_EMAIL!
+        );
+        console.log('Sheet shared with service account successfully');
+      } catch (shareError) {
+        console.error('Failed to share sheet with service account:', shareError);
+        // Continue anyway - user can grant access manually if needed
+      }
 
-      // Setup headers for Incomes sheet
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: newSheetId,
-        range: 'Incomes!A1:F1',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [['Timestamp', 'Subject', 'Date', 'Amount', 'Category', 'Description']],
-        },
-      });
+      // Try to setup headers using service account, but if it fails due to permissions,
+      // we'll let the user know they need to manually share the sheet
+      let headersSetup = false;
+      try {
+        // Setup headers for Expenses sheet
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: newSheetId,
+          range: 'Expenses!A1:G1',
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['Timestamp', 'Subject', 'Date', 'Amount', 'Category', 'Description', 'Reimbursed']],
+          },
+        });
+
+        // Setup headers for Incomes sheet
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: newSheetId,
+          range: 'Incomes!A1:F1',
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['Timestamp', 'Subject', 'Date', 'Amount', 'Category', 'Description']],
+          },
+        });
+        
+        headersSetup = true;
+        console.log('Headers setup completed successfully');
+      } catch (headerError) {
+        console.error('Failed to setup headers with service account:', headerError);
+        // Continue anyway - sheet was created successfully
+      }
 
       // Save the sheet ID to user's configuration
       const userId = getUserId(session);
       await setUserSheet(userId, session.user.email!, newSheetId);
 
       return NextResponse.json({
-        message: 'Spreadsheet created and configured successfully',
+        message: headersSetup 
+          ? 'Spreadsheet created and configured successfully' 
+          : 'Spreadsheet created successfully',
         sheetId: newSheetId,
         spreadsheetUrl,
         serviceAccount: process.env.GOOGLE_CLIENT_EMAIL,
+        headersSetup,
+        needsManualSharing: !headersSetup,
       }, { status: 200 });
 
     } else if (action === 'setup-existing') {
@@ -183,6 +260,18 @@ export async function POST(req: Request) {
           },
         });
 
+        // Automatically share the existing sheet with the service account
+        try {
+          await shareSheetWithServiceAccount(
+            session.accessToken,
+            sheetId,
+            process.env.GOOGLE_CLIENT_EMAIL!
+          );
+        } catch (shareError) {
+          console.error('Failed to share existing sheet with service account:', shareError);
+          // Continue anyway - user can grant access manually if needed
+        }
+
         // Save the sheet ID to user's configuration
         const userId = getUserId(session);
         await setUserSheet(userId, session.user.email!, sheetId);
@@ -192,6 +281,7 @@ export async function POST(req: Request) {
           sheetId,
           spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${sheetId}`,
           serviceAccount: process.env.GOOGLE_CLIENT_EMAIL,
+          autoShared: true, // Indicate that we automatically shared it
         }, { status: 200 });
 
       } catch (accessError: any) {

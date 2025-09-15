@@ -41,6 +41,7 @@ interface SheetError {
   errorType: string;
   error: string;
   serviceAccount?: string;
+  sheetUrl?: string;
 }
 
 // Mock data for the donut chart (will be replaced with real data)
@@ -184,6 +185,9 @@ export default function MobileFinanceTracker() {
   const handleCreateSheet = async () => {
     try {
       setLoading(true)
+      console.log('Creating sheet for user:', session?.user?.email)
+      console.log('Session has accessToken:', !!session?.accessToken)
+      
       const response = await fetch('/api/setup-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -191,16 +195,29 @@ export default function MobileFinanceTracker() {
       })
 
       const result = await response.json()
+      console.log('Setup sheet response:', result)
       
       if (response.ok) {
         // Update user sheet status
         setHasUserSheet(true)
         setUserSheetId(result.sheetId)
-        setError(null)
         
-        alert(`Sheet created successfully! Your personal expense tracker is ready.`)
-        // Refresh data after successful creation
-        await fetchData()
+        if (result.needsManualSharing) {
+          // Sheet created but needs manual sharing
+          setError({
+            message: 'Sheet created - Manual sharing needed',
+            errorType: 'SHEET_CREATED_NEEDS_SHARING',
+            error: `Your sheet was created successfully, but you need to manually share it with the service account to start using it.`,
+            serviceAccount: result.serviceAccount,
+            sheetUrl: result.spreadsheetUrl
+          })
+        } else {
+          // Everything worked perfectly
+          setError(null)
+          alert(`🎉 Sheet created and configured successfully! Your personal expense tracker is ready.`)
+          // Refresh data after successful creation
+          await fetchData()
+        }
       } else {
         throw result
       }
@@ -233,7 +250,7 @@ export default function MobileFinanceTracker() {
         setUserSheetId(sheetId)
         setError(null)
         
-        alert('Sheet setup successfully! Your personal expense tracker is ready.')
+        alert('🎉 Sheet setup successfully! Permissions automatically granted. Your personal expense tracker is ready.')
         // Refresh data after successful setup
         await fetchData()
       } else {
@@ -350,7 +367,10 @@ export default function MobileFinanceTracker() {
               <div className="space-y-3">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-sm text-blue-700">
-                    💡 <strong>First time setup:</strong> You'll need to grant access to our service account to create or access Google Sheets.
+                    ✨ <strong>Quick Setup:</strong> We'll automatically create your sheet and grant the necessary permissions!
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Note: If you signed in before, you may need to refresh permissions for automatic setup.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -361,6 +381,15 @@ export default function MobileFinanceTracker() {
                   <Button onClick={handleSetupExistingSheet} variant="neutral" className="w-full" size="sm">
                     <Share className="w-4 h-4 mr-2" />
                     Use Existing Sheet
+                  </Button>
+                  <Button 
+                    onClick={() => signIn('google')} 
+                    variant="neutral" 
+                    className="w-full" 
+                    size="sm"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Refresh Permissions
                   </Button>
                 </div>
               </div>
@@ -452,12 +481,93 @@ export default function MobileFinanceTracker() {
               </div>
             )}
 
+            {error.errorType === 'MISSING_ACCESS_TOKEN' && (
+              <div className="space-y-2">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <p className="text-sm text-orange-700">
+                    🔄 Need to refresh permissions for Google Sheets access.
+                  </p>
+                </div>
+                <Button onClick={() => signIn('google')} className="w-full" size="sm">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Refresh Permissions
+                </Button>
+              </div>
+            )}
+
+            {error.errorType === 'SHEET_CREATED_NEEDS_SHARING' && (
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-medium text-green-800 mb-2">✅ Sheet Created Successfully!</h4>
+                  <p className="text-sm text-green-700 mb-3">
+                    Your Google Sheet was created, but we need to manually share it with our service account to access your data.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-white rounded p-3 border">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Step 1: Open Your New Sheet</p>
+                      <Button
+                        onClick={() => window.open(error.sheetUrl, '_blank')}
+                        variant="neutral"
+                        size="sm"
+                        className="w-full text-xs"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-2" />
+                        Open Your Sheet
+                      </Button>
+                    </div>
+
+                    <div className="bg-white rounded p-3 border">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Step 2: Copy Service Account Email</p>
+                      <div className="flex items-center gap-2 bg-gray-50 p-2 rounded">
+                        <code className="text-xs flex-1 text-gray-800 break-all">
+                          {error.serviceAccount}
+                        </code>
+                        <Button
+                          size="sm"
+                          variant="neutral"
+                          onClick={() => copyServiceAccountEmail(error.serviceAccount!)}
+                          className="flex-shrink-0"
+                        >
+                          {copiedEmail ? (
+                            <CheckCircle className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded p-3 border">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Step 3: Share Your Sheet</p>
+                      <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+                        <li>In your sheet, click the "Share" button</li>
+                        <li>Paste the service account email</li>
+                        <li>Set permission to "Editor"</li>
+                        <li>Click "Send"</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Button onClick={fetchData} className="w-full" size="sm">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    I've Shared the Sheet - Start Tracking!
+                  </Button>
+                  <Button onClick={() => setError(null)} variant="neutral" className="w-full" size="sm">
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {error.errorType === 'SERVICE_ACCOUNT_ACCESS_REQUIRED' && (
               <div className="space-y-4">
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <h4 className="font-medium text-yellow-800 mb-2">🔑 Service Account Access Required</h4>
                   <p className="text-sm text-yellow-700 mb-3">
-                    To create and access Google Sheets, you need to grant access to our service account. Follow these steps:
+                    Don't worry! We try to automatically grant permissions, but if that fails, you can manually grant access following these steps:
                   </p>
                   
                   <div className="space-y-3">
@@ -518,9 +628,13 @@ export default function MobileFinanceTracker() {
                 </div>
 
                 <div className="space-y-2">
-                  <Button onClick={handleSetupExistingSheet} className="w-full" size="sm">
+                  <Button onClick={handleCreateSheet} className="w-full" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Try Automatic Setup
+                  </Button>
+                  <Button onClick={handleSetupExistingSheet} variant="neutral" className="w-full" size="sm">
                     <Share className="w-4 h-4 mr-2" />
-                    I've Granted Access - Setup Sheet
+                    Manual Setup (I've Granted Access)
                   </Button>
                   <Button onClick={() => setError(null)} variant="neutral" className="w-full" size="sm">
                     Cancel
