@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession, signIn } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
-import { Bell, Wallet, Settings, Zap, LogIn } from 'lucide-react'
+import { Bell, Wallet, Settings, Zap, LogIn, Loader2 } from 'lucide-react'
 import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
 import { ExpenseForm } from './components/expense-form'
@@ -15,6 +15,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
+import { Category } from '@/schema/schema'
 
 // Types for our data
 interface ExpenseData {
@@ -113,6 +114,11 @@ export default function MobileFinanceTracker() {
   const [userSheetId, setUserSheetId] = useState<string | null>(null)
   const [hasUserSheet, setHasUserSheet] = useState<boolean>(false)
 
+  // Categories state
+  const [expenseCategories, setExpenseCategories] = useState<Category[]>([])
+  const [incomeCategories, setIncomeCategories] = useState<Category[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
+
   // Drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [drawerKey, setDrawerKey] = useState(0)
@@ -126,7 +132,7 @@ export default function MobileFinanceTracker() {
   const checkUserSheet = async () => {
     try {
       const response = await fetch('/api/user-sheet')
-      
+
       if (response.ok) {
         const data = await response.json()
         setHasUserSheet(data.hasSheet)
@@ -141,6 +147,33 @@ export default function MobileFinanceTracker() {
       console.error('Error checking user sheet:', error)
       setHasUserSheet(false)
       setUserSheetId(null)
+    }
+  }
+
+  // Fetch user categories
+  const fetchUserCategories = async () => {
+    try {
+      setCategoriesLoading(true)
+      const response = await fetch('/api/user-categories')
+      if (response.ok) {
+        const data = await response.json()
+        setExpenseCategories(data.expense_categories || [])
+        setIncomeCategories(data.income_categories || [])
+      } else {
+        console.error('Failed to fetch categories')
+        // Set default categories from schema
+        const { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } = await import('@/schema/schema')
+        setExpenseCategories(DEFAULT_EXPENSE_CATEGORIES)
+        setIncomeCategories(DEFAULT_INCOME_CATEGORIES)
+      }
+    } catch (error) {
+      console.error('Error fetching user categories:', error)
+      // Set default categories on error
+      const { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } = await import('@/schema/schema')
+      setExpenseCategories(DEFAULT_EXPENSE_CATEGORIES)
+      setIncomeCategories(DEFAULT_INCOME_CATEGORIES)
+    } finally {
+      setCategoriesLoading(false)
     }
   }
 
@@ -351,15 +384,25 @@ export default function MobileFinanceTracker() {
   // Initialize user data when authenticated
   useEffect(() => {
     if (status === 'authenticated') {
-      // First check if user has a sheet configured
-      checkUserSheet().then(() => {
-        // Only fetch data if we have a sheet configured
-        fetchData()
+      // Fetch user categories and check sheet configuration
+      fetchUserCategories().then(() => {
+        checkUserSheet().then(() => {
+          // Only fetch data if we have a sheet configured
+          fetchData()
+        })
       })
     } else if (status === 'unauthenticated') {
       setLoading(false)
+      setCategoriesLoading(false)
     }
   }, [session, status])
+
+  // Automatically open sheet settings if no sheet is configured
+  useEffect(() => {
+    if (status === 'authenticated' && !hasUserSheet && !loading) {
+      setIsDrawerOpen(true)
+    }
+  }, [hasUserSheet, status, loading])
 
   // Handle form submission
   const handleFormSubmit = async (formData: {
@@ -375,12 +418,13 @@ export default function MobileFinanceTracker() {
       
       const payload = {
         timestamp: new Date().toISOString(),
-        subject: '', // Empty subject as it's not used in the form
         date: formData.date,
         amount: formData.amount,
         category: formData.category,
-        description: formData.note || '',
-        ...(formData.type === 'expense' && { reimbursed: 'FALSE' })
+        ...(formData.type === 'expense'
+          ? { notes: formData.note || '' }
+          : { description: formData.note || '' }
+        )
       }
 
       const response = await fetch(endpoint, {
@@ -419,7 +463,7 @@ export default function MobileFinanceTracker() {
         {/* Centered content */}
         <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-3"></div>
+            <Loader2 className="animate-spin h-10 w-10 text-white mx-auto mb-3" />
             <p className="text-white text-base">Loading...</p>
           </div>
         </div>
@@ -534,16 +578,19 @@ export default function MobileFinanceTracker() {
               Settings
             </Button>
           </DrawerTrigger>
-          <DrawerContent className="max-h-[80vh] w-full">
-            <DrawerHeader>
+          <DrawerContent className="max-h-[80vh] w-full flex flex-col">
+            <DrawerHeader className="flex-shrink-0">
               <DrawerTitle>Sheet Settings</DrawerTitle>
             </DrawerHeader>
-            <div className="px-4 pb-4">
+            <div className="flex-1 overflow-hidden">
               <SheetSettings
                 key={drawerKey}
                 error={error}
                 userSheetId={userSheetId}
                 hasUserSheet={hasUserSheet}
+                userEmail={session?.user?.email || ''}
+                expenseCategories={expenseCategories}
+                incomeCategories={incomeCategories}
                 onCreateSheet={handleCreateSheet}
                 onSetupExistingSheet={handleSetupExistingSheet}
                 onRetryFetch={fetchData}

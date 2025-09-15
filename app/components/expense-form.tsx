@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
+import { CalendarIcon, TrendingUp, TrendingDown, Wallet, Loader2 } from 'lucide-react'
 import { convertDatabaseCategoriesToForm, FormCategory } from '@/lib/icon-mapper'
 import { cn } from "@/lib/utils"
 
@@ -58,12 +58,32 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
         setExpenseCategories(expenseCats)
         setIncomeCategories(incomeCats)
       } else {
-        console.error('Failed to fetch user categories')
+        console.error('Failed to fetch user categories, using defaults')
+        // Set default categories on API failure
+        await setDefaultCategories()
       }
     } catch (error) {
-      console.error('Error fetching user categories:', error)
+      console.error('Error fetching user categories, using defaults:', error)
+      // Set default categories on error
+      await setDefaultCategories()
     } finally {
       setCategoriesLoading(false)
+    }
+  }
+
+  // Set default categories
+  const setDefaultCategories = async () => {
+    try {
+      const { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } = await import('@/schema/schema')
+      const expenseCats = convertDatabaseCategoriesToForm(DEFAULT_EXPENSE_CATEGORIES)
+      const incomeCats = convertDatabaseCategoriesToForm(DEFAULT_INCOME_CATEGORIES)
+      setExpenseCategories(expenseCats)
+      setIncomeCategories(incomeCats)
+    } catch (error) {
+      console.error('Error setting default categories:', error)
+      // Fallback to empty arrays if import fails
+      setExpenseCategories([])
+      setIncomeCategories([])
     }
   }
 
@@ -74,6 +94,12 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
   const handleSave = async () => {
     if (categoriesLoading) {
       alert('Please wait for categories to load')
+      return
+    }
+
+    const currentCategories = activeCategory === 'expense' ? expenseCategories : incomeCategories
+    if (currentCategories.length === 0 && !categoriesLoading) {
+      alert('No categories available. Please try refreshing the page.')
       return
     }
 
@@ -178,15 +204,14 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
                       const category = (activeCategory === 'expense' ? expenseCategories : incomeCategories)
                         .find(cat => cat.value === selectedCategory);
                       return category ? (
-                        <>
-                          <category.icon className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">{category.label}</span>
-                        </>
+                        <span className="truncate">{category.value}</span>
                       ) : null;
                     })()
                   ) : (
                     <>
-                      <div className="w-4 h-4 rounded-full border border-secondary-foreground/50 flex-shrink-0" />
+                      {categoriesLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0 text-secondary-foreground/50" />
+                      ) : null}
                       <span className="text-secondary-foreground/50">
                         {categoriesLoading ? 'Loading...' : 'Kategori'}
                       </span>
@@ -194,15 +219,22 @@ export function ExpenseForm({ onSubmit, loading }: ExpenseFormProps) {
                   )}
                 </div>
               </SelectTrigger>
-              <SelectContent className="w-full">
-                {(activeCategory === 'expense' ? expenseCategories : incomeCategories).map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    <div className="flex items-center gap-2">
-                      <category.icon className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{category.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+              <SelectContent className="w-full bg-white">
+                {(() => {
+                  const currentCategories = activeCategory === 'expense' ? expenseCategories : incomeCategories
+                  if (currentCategories.length === 0) {
+                    return (
+                      <div className="p-2 text-center text-sm text-secondary-foreground/50">
+                        {categoriesLoading ? 'Loading categories...' : 'No categories available'}
+                      </div>
+                    )
+                  }
+                  return currentCategories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      <span className="truncate">{category.value}</span>
+                    </SelectItem>
+                  ))
+                })()}
               </SelectContent>
             </Select>
           </div>

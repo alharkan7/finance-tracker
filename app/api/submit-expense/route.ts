@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { timestamp, subject, date, amount, category, description, reimbursed } = body;
+    const { timestamp, date, amount, category, notes } = body;
 
     const auth = new google.auth.GoogleAuth({
       credentials: {
@@ -71,16 +71,35 @@ export async function POST(req: Request) {
     }
 
     const sheetId = userSheet.sheetId;
-    const range = 'Expenses!A:E'; // Change this to 'Sheet1!A1:E1' for appending on new row
 
+    // Check if the sheet has headers by reading the first row
+    const headerCheckResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: 'Expenses!A1:E1',
+    });
+
+    const hasHeaders = headerCheckResponse.data.values && headerCheckResponse.data.values.length > 0;
+
+    // If no headers exist, add them first
+    if (!hasHeaders) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: 'Expenses!A1:E1',
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [['Timestamp', 'Date', 'Amount', 'Category', 'Notes']],
+        },
+      });
+    }
+
+    // Append the expense data
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range,
+      range: 'Expenses!A:E',
       valueInputOption: 'USER_ENTERED',
-      includeValuesInResponse: true,
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
-        values: [[timestamp, subject, date, amount, category, description, reimbursed]],
+        values: [[timestamp, date, amount, category, notes]],
       },
     });
 

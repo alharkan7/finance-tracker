@@ -153,20 +153,20 @@ export async function POST(req: Request) {
         // Setup headers for Expenses sheet
         await sheets.spreadsheets.values.update({
           spreadsheetId: newSheetId,
-          range: 'Expenses!A1:G1',
+          range: 'Expenses!A1:E1',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
-            values: [['Timestamp', 'Subject', 'Date', 'Amount', 'Category', 'Description', 'Reimbursed']],
+            values: [['Timestamp', 'Date', 'Amount', 'Category', 'Notes']],
           },
         });
 
         // Setup headers for Incomes sheet
         await sheets.spreadsheets.values.update({
           spreadsheetId: newSheetId,
-          range: 'Incomes!A1:F1',
+          range: 'Incomes!A1:E1',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
-            values: [['Timestamp', 'Subject', 'Date', 'Amount', 'Category', 'Description']],
+            values: [['Timestamp', 'Date', 'Amount', 'Category', 'Description']],
           },
         });
         
@@ -244,19 +244,19 @@ export async function POST(req: Request) {
         // Setup headers for both sheets (will overwrite if they exist)
         await sheets.spreadsheets.values.update({
           spreadsheetId: sheetId,
-          range: 'Expenses!A1:G1',
+          range: 'Expenses!A1:E1',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
-            values: [['Timestamp', 'Subject', 'Date', 'Amount', 'Category', 'Description', 'Reimbursed']],
+            values: [['Timestamp', 'Date', 'Amount', 'Category', 'Notes']],
           },
         });
 
         await sheets.spreadsheets.values.update({
           spreadsheetId: sheetId,
-          range: 'Incomes!A1:F1',
+          range: 'Incomes!A1:E1',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
-            values: [['Timestamp', 'Subject', 'Date', 'Amount', 'Category', 'Description']],
+            values: [['Timestamp', 'Date', 'Amount', 'Category', 'Description']],
           },
         });
 

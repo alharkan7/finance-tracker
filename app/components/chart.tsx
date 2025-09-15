@@ -1,7 +1,7 @@
 'use client'
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { Plus, Minus } from 'lucide-react'
+import { Plus, Minus, Loader2 } from 'lucide-react'
 
 interface ChartData {
   name: string;
@@ -21,7 +21,7 @@ export function Chart({ data, totalIncome, totalExpenses, balance, loading }: Ch
   if (loading) {
     return (
       <div className="text-center py-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto" />
         <p className="text-gray-600 mt-2">Loading data...</p>
       </div>
     )

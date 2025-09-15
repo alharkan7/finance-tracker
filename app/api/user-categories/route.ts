@@ -65,3 +65,49 @@ export async function GET(req: Request) {
     }, { status: 500 });
   }
 }
+
+// PUT - Update user's custom categories
+export async function PUT(req: Request) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user?.email) {
+      return NextResponse.json({
+        message: 'Unauthorized',
+        error: 'You must be logged in to update categories'
+      }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { expenseCategories, incomeCategories } = body;
+
+    // Validate input
+    if (!Array.isArray(expenseCategories) || !Array.isArray(incomeCategories)) {
+      return NextResponse.json({
+        message: 'Invalid input',
+        error: 'Both expenseCategories and incomeCategories must be arrays'
+      }, { status: 400 });
+    }
+
+    // Update user categories in database
+    const updatedUser = await DatabaseService.updateUserCategories(
+      session.user.email,
+      expenseCategories,
+      incomeCategories
+    );
+
+    return NextResponse.json({
+      message: 'Categories updated successfully',
+      expense_categories: updatedUser.expense_categories,
+      income_categories: updatedUser.income_categories
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('Error updating user categories:', error);
+    return NextResponse.json({
+      message: 'Error updating categories',
+      error: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
+  }
+}

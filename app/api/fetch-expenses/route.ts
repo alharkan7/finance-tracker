@@ -93,7 +93,7 @@ export async function GET(req: Request) {
       throw accessError;
     }
 
-    const range = 'Expenses!A:G'; // Fetch all columns including reimbursed
+    const range = 'Expenses!A:E'; // Fetch all columns
 
     let response;
     try {
@@ -123,15 +123,12 @@ export async function GET(req: Request) {
     }
 
     // Skip header row and map data
-    // Using Date column (index 2) for filtering, not Timestamp column (index 0)
     const expenses = rows.slice(1).map((row: any[]) => ({
       timestamp: row[0] || '', // Column A: Timestamp
-      subject: row[1] || '',    // Column B: Subject
-      date: row[2] || '',       // Column C: Date (used for filtering)
-      amount: parseFloat(row[3]) || 0, // Column D: Amount
-      category: row[4] || '',   // Column E: Category
-      description: row[5] || '', // Column F: Description
-      reimbursed: row[6] || 'FALSE', // Column G: Reimbursed
+      date: row[1] || '',       // Column B: Date
+      amount: parseFloat(row[2]) || 0, // Column C: Amount
+      category: row[3] || '',   // Column D: Category
+      description: row[4] || '', // Column E: Notes (mapped to description for consistency)
     }));
 
     return NextResponse.json({ expenses }, { status: 200 });
