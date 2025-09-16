@@ -913,7 +913,7 @@ export default function MobileFinanceTracker() {
               Settings
             </Button>
           </DrawerTrigger>
-          <DrawerContent className="max-h-[80vh] w-full flex flex-col">
+          <DrawerContent className="max-h-[80vh] w-full max-w-sm mx-auto flex flex-col">
             <DrawerHeader className="flex-shrink-0">
               <DrawerTitle>Settings</DrawerTitle>
             </DrawerHeader>
@@ -939,7 +939,9 @@ export default function MobileFinanceTracker() {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0"></div>
+        <div className="flex-shrink-0 text-center">
+          <p className="text-xs text-white/70">Tim Peneliti DIPA Polinema</p>
+        </div>
 
         {/* Budget Alert Dialog */}
         <Dialog open={isBudgetAlertOpen} onOpenChange={setIsBudgetAlertOpen}>
