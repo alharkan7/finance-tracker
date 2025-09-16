@@ -243,10 +243,77 @@ export function SheetSettings({
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Google Sheets</h3>
 
+            {/* Setup Google Sheets Steps */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <button
+                onClick={() => setPermissionStepsExpanded(!permissionStepsExpanded)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <h4 className="text-sm font-semibold text-blue-900">Setup Google Sheets</h4>
+                {permissionStepsExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-blue-600" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-blue-600" />
+                )}
+              </button>
+              {permissionStepsExpanded && (
+                <div className="space-y-3 mt-3">
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-blue-800 mb-2">Copy this service account email:</p>
+                      <div className="flex items-center gap-2 p-2 bg-white border border-blue-300 rounded transition-colors duration-200"
+                           style={{ backgroundColor: copiedEmail ? '#dcfce7' : '#ffffff' }}>
+                        <code className="text-xs text-gray-700 flex-1">expense-tracker@hobby-project-435405.iam.gserviceaccount.com</code>
+                        <Button
+                          size="sm"
+                          variant="neutral"
+                          onClick={() => copyServiceAccountEmail('expense-tracker@hobby-project-435405.iam.gserviceaccount.com')}
+                          className="flex items-center justify-center w-8 h-8 p-0"
+                        >
+                          {copiedEmail ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-blue-800 mb-2">Make a copy of this template:</p>
+                      <div className="flex items-center gap-2 p-2 bg-white border border-blue-300 rounded hover:bg-green-100">
+                        <a
+                          href="https://docs.google.com/spreadsheets/d/1Hos52HFTnMLOiCsjG9F4U6uIsgSEDc2LhEvaUHT0UmI/edit?usp=sharing"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-xs text-blue-600 hover:text-blue-800 hover:underline flex-1 truncate"
+                        >
+                          Open Template Sheet
+                        </a>
+                        <ExternalLink className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      </div>
+                      <ul className="text-xs text-blue-700 mt-2 ml-4 list-disc">
+                        <li>Click "File" → "Make a copy"</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-blue-800">Add the email from Step 1 as <strong>Editor</strong> on your newly created sheet:</p>
+                      <ul className="text-xs text-blue-700 mt-1 ml-4 list-disc">
+                        <li>Click "Share" → Paste Email</li>
+                        <li>Set as Editor → "Send"</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-4">
               {/* Current Sheet ID */}
               <div>
-                <Label className="text-sm font-medium text-gray-700">Current Sheet ID</Label>
+                <Label className="text-sm font-medium text-gray-700">Your Google Sheet</Label>
                 <div className="flex items-center gap-2 mt-1">
                   {editingSheetId ? (
                     <>
@@ -297,15 +364,6 @@ export function SheetSettings({
 
               {/* Sheet Actions */}
               <div className="flex gap-2 flex-wrap">
-                <Button
-                  onClick={onCreateSheet}
-                  size="sm"
-                  disabled={loading || saving}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create New
-                </Button>
                 {userSheetId && (
                   <Button
                     onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${userSheetId}`, '_blank')}
@@ -320,53 +378,6 @@ export function SheetSettings({
                 )}
               </div>
 
-              {/* Permission Steps */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <button
-                  onClick={() => setPermissionStepsExpanded(!permissionStepsExpanded)}
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <h4 className="text-sm font-semibold text-blue-900">Grant Permission Steps</h4>
-                  {permissionStepsExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-blue-600" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-blue-600" />
-                  )}
-                </button>
-                {permissionStepsExpanded && (
-                  <div className="space-y-3 mt-3">
-                    <div className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
-                      <div className="flex-1">
-                        <p className="text-sm text-blue-800 mb-2">Copy this service account email:</p>
-                        <div className="flex items-center gap-2 p-2 bg-white border border-blue-300 rounded">
-                          <code className="text-xs text-gray-700 flex-1">expense-tracker@hobby-project-435405.iam.gserviceaccount.com</code>
-                          <Button
-                            size="sm"
-                            variant="neutral"
-                            onClick={() => copyServiceAccountEmail('expense-tracker@hobby-project-435405.iam.gserviceaccount.com')}
-                            className="flex items-center justify-center w-8 h-8 p-0"
-                          >
-                            {copiedEmail ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
-                      <div className="flex-1">
-                        <p className="text-sm text-blue-800">Add it as <strong>Editor</strong> on your Google Sheet:</p>
-                        <ul className="text-xs text-blue-700 mt-1 ml-4 list-disc">
-                          <li>Open your Google Sheet</li>
-                          <li>Click "Share" button</li>
-                          <li>Paste the email and set as Editor</li>
-                          <li>Click "Send"</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
