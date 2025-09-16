@@ -202,7 +202,7 @@ export function Chart({
       </div>
 
       {/* Chart Container */}
-      <div className="h-48 w-full mx-auto max-w-full relative">
+      <div className="h-46 p-2 w-full mx-auto max-w-full relative flex items-center justify-center">
         {/* Chart Type Navigation */}
         {chartType === 'line' && (
           <button
@@ -224,15 +224,15 @@ export function Chart({
         )}
 
         {chartType === 'donut' ? (
-          <div className="h-48 w-48 mx-auto max-w-full relative rounded-lg overflow-hidden">
+          <div className="h-40 w-40 mx-auto max-w-full relative rounded-lg overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <RechartsPieChart>
                 <Pie
                   data={data}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
+                  innerRadius={50}
+                  outerRadius={80}
                   dataKey="value"
                   onClick={handlePieClick}
                 >

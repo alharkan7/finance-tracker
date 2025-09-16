@@ -848,7 +848,7 @@ export default function MobileFinanceTracker() {
         </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-white rounded-t-3xl mt-2 p-4 space-y-6 w-full overflow-y-auto flex flex-col items-center">
+      <div className="flex-1 bg-white rounded-t-3xl p-4 w-full overflow-y-auto flex flex-col items-center">
 
         {/* Chart Section */}
         {!error && (
@@ -887,7 +887,7 @@ export default function MobileFinanceTracker() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="flex gap-2 p-3 mb-2 bg-white w-full flex-shrink-0 rounded-b-lg">
+      <div className="flex gap-2 p-3 mb-1 bg-white w-full flex-shrink-0 rounded-b-lg">
         <Button
           variant="neutral"
           className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent"
@@ -939,7 +939,7 @@ export default function MobileFinanceTracker() {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 text-center">
+        <div className="flex-shrink-0 text-center mb-1">
           <p className="text-xs text-white/70">Tim Peneliti DIPA Polinema</p>
         </div>
 

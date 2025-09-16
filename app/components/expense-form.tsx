@@ -175,7 +175,7 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseForm
   }
 
   return (
-    <div className="space-y-4 w-full max-w-sm">
+    <div className="space-y-4 w-full max-w-sm flex flex-col mt-2">
       {/* Category Buttons */}
       <div className="flex gap-2 w-full">
         <Button
