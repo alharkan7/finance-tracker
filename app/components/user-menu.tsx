@@ -28,12 +28,12 @@ export function UserMenu() {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="neutral" size="icon" className="text-white hover:bg-white/10 border border-white/20">
+            <Button variant="outline" className="p-0 w-10 h-10 rounded-full">
               {session.user?.image ? (
                 <img
                   src={session.user.image}
                   alt={session.user.name || "User"}
-                  className="w-6 h-6 rounded-full"
+                  className="w-full h-full rounded-full object-cover"
                 />
               ) : (
                 <User className="w-6 h-6" />
@@ -62,7 +62,7 @@ export function UserMenu() {
 
   return (
     <Button
-      variant="neutral"
+      variant="outline"
       size="sm"
       onClick={() => signIn("google")}
     >

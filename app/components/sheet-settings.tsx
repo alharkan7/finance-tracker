@@ -24,10 +24,10 @@ export function Settings({
 }: SettingsProps) {
   const [editingExpenseCategories, setEditingExpenseCategories] = useState<Category[]>(expenseCategories)
   const [editingIncomeCategories, setEditingIncomeCategories] = useState<Category[]>(incomeCategories)
-  const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null)
-  const [editingCategoryType, setEditingCategoryType] = useState<'expense' | 'income' | null>(null)
   const [editingEmojiIndex, setEditingEmojiIndex] = useState<number | null>(null)
   const [editingEmojiType, setEditingEmojiType] = useState<'expense' | 'income' | null>(null)
+  const [editingExpenseMode, setEditingExpenseMode] = useState(false)
+  const [editingIncomeMode, setEditingIncomeMode] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // Update state when props change
@@ -38,11 +38,6 @@ export function Settings({
 
 
   // Handle category editing
-  const startEditingCategory = (type: 'expense' | 'income', index: number) => {
-    setEditingCategoryType(type)
-    setEditingCategoryIndex(index)
-  }
-
   const updateCategory = (type: 'expense' | 'income', index: number, field: 'value' | 'label', value: string) => {
     const categories = type === 'expense' ? [...editingExpenseCategories] : [...editingIncomeCategories]
     const currentCategory = categories[index]
@@ -62,16 +57,6 @@ export function Settings({
     } else {
       setEditingIncomeCategories(categories)
     }
-  }
-
-  const cancelCategoryEdit = () => {
-    setEditingCategoryIndex(null)
-    setEditingCategoryType(null)
-  }
-
-  const saveCategoryEdit = () => {
-    setEditingCategoryIndex(null)
-    setEditingCategoryType(null)
   }
 
   // Common emojis for category selection
@@ -131,6 +116,24 @@ export function Settings({
     setEditingEmojiType(null)
   }
 
+  const toggleExpenseEditMode = () => {
+    setEditingExpenseMode(!editingExpenseMode)
+    // Close any open emoji pickers when toggling edit mode
+    if (editingEmojiType === 'expense') {
+      setEditingEmojiIndex(null)
+      setEditingEmojiType(null)
+    }
+  }
+
+  const toggleIncomeEditMode = () => {
+    setEditingIncomeMode(!editingIncomeMode)
+    // Close any open emoji pickers when toggling edit mode
+    if (editingEmojiType === 'income') {
+      setEditingEmojiIndex(null)
+      setEditingEmojiType(null)
+    }
+  }
+
   // Save all settings
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -149,6 +152,10 @@ export function Settings({
       }
 
       toast.success('Settings saved successfully!')
+
+      // Exit edit modes after saving
+      setEditingExpenseMode(false)
+      setEditingIncomeMode(false)
 
       // Notify parent component to refresh categories
       if (onCategoriesUpdated) {
@@ -172,44 +179,42 @@ export function Settings({
 
           {/* Expense Categories Section */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Categories</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Expense Categories</h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={toggleExpenseEditMode}
+                className={`p-1 ${editingExpenseMode ? 'bg-gray-100 text-gray-600' : 'hover:bg-gray-100'}`}
+                title={editingExpenseMode ? 'Exit edit mode' : 'Edit categories'}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+            </div>
             <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {editingExpenseCategories.map((category, index) => (
-                <div key={index} className="flex flex-col gap-2 p-2 border border-gray-200 rounded rounded-lg">
+                <div key={index} className="flex flex-col gap-2 p-2 border border-gray-200 rounded rounded-full">
                   {/* Category Row */}
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => startEditingEmoji('expense', index)}
-                      className="text-lg hover:bg-gray-100 rounded px-1 py-0.5 transition-colors cursor-pointer"
+                      className={`rounded-full text-lg hover:bg-gray-100 rounded px-1 py-0.5 transition-colors cursor-pointer ${
+                        editingExpenseMode ? '' : 'pointer-events-none opacity-60'
+                      }`}
                       title="Click to change emoji"
+                      disabled={!editingExpenseMode}
                     >
                       {category.value.split(' ')[0]}
                     </button>
-                    {editingCategoryType === 'expense' && editingCategoryIndex === index ? (
-                      <>
-                        <Input
-                          value={category.label}
-                          onChange={(e) => updateCategory('expense', index, 'label', e.target.value)}
-                          className="flex-1 text-sm rounded-lg"
-                        />
-                        <Button size="sm" variant="neutral" onClick={saveCategoryEdit}>
-                          <Check className="w-3 h-3" />
-                        </Button>
-                        <Button size="sm" variant="neutral" onClick={cancelCategoryEdit}>
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </>
+                    {editingExpenseMode ? (
+                      <Input
+                        value={category.label}
+                        onChange={(e) => updateCategory('expense', index, 'label', e.target.value)}
+                        className="flex-1 text-sm rounded-full bg-gray-50 focus:outline-none focus:ring-0 border-none"
+                        placeholder="Category name"
+                      />
                     ) : (
-                      <>
-                        <span className="flex-1 text-sm">{category.label}</span>
-                        <Button
-                          size="sm"
-                          variant="neutral"
-                          onClick={() => startEditingCategory('expense', index)}
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                      </>
+                      <span className="flex-1 text-sm">{category.label}</span>
                     )}
                   </div>
 
@@ -221,7 +226,7 @@ export function Settings({
                           <Smile className="w-4 h-4" />
                           <span className="text-sm font-medium">Choose an emoji:</span>
                         </div>
-                        <Button size="sm" variant="neutral" onClick={cancelEmojiEdit}>
+                        <Button size="sm" variant="ghost" onClick={cancelEmojiEdit}>
                           <X className="w-3 h-3" />
                         </Button>
                       </div>
@@ -246,44 +251,42 @@ export function Settings({
 
           {/* Income Categories Section */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Income Categories</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Income Categories</h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={toggleIncomeEditMode}
+                className={`p-1 ${editingIncomeMode ? 'bg-gray-100 text-gray-600' : 'hover:bg-gray-100'}`}
+                title={editingIncomeMode ? 'Exit edit mode' : 'Edit categories'}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+            </div>
             <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {editingIncomeCategories.map((category, index) => (
-                <div key={index} className="flex flex-col gap-2 p-2 border border-gray-200 rounded rounded-lg">
+                <div key={index} className="flex flex-col gap-2 p-2 border border-gray-200 rounded rounded-full">
                   {/* Category Row */}
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => startEditingEmoji('income', index)}
-                      className="text-lg hover:bg-gray-100 rounded px-1 py-0.5 transition-colors cursor-pointer"
+                      className={`rounded-full text-lg hover:bg-gray-100 rounded px-1 py-0.5 transition-colors cursor-pointer ${
+                        editingIncomeMode ? '' : 'pointer-events-none opacity-60'
+                      }`}
                       title="Click to change emoji"
+                      disabled={!editingIncomeMode}
                     >
                       {category.value.split(' ')[0]}
                     </button>
-                    {editingCategoryType === 'income' && editingCategoryIndex === index ? (
-                      <>
-                        <Input
-                          value={category.label}
-                          onChange={(e) => updateCategory('income', index, 'label', e.target.value)}
-                          className="flex-1 text-sm rounded-lg"
-                        />
-                        <Button size="sm" variant="neutral" onClick={saveCategoryEdit}>
-                          <Check className="w-3 h-3" />
-                        </Button>
-                        <Button size="sm" variant="neutral" onClick={cancelCategoryEdit}>
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </>
+                    {editingIncomeMode ? (
+                      <Input
+                        value={category.label}
+                        onChange={(e) => updateCategory('income', index, 'label', e.target.value)}
+                        className="flex-1 text-sm rounded-full bg-gray-50 focus:outline-none focus:ring-0 border-none"
+                        placeholder="Category name"
+                      />
                     ) : (
-                      <>
-                        <span className="flex-1 text-sm">{category.label}</span>
-                        <Button
-                          size="sm"
-                          variant="neutral"
-                          onClick={() => startEditingCategory('income', index)}
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                      </>
+                      <span className="flex-1 text-sm">{category.label}</span>
                     )}
                   </div>
 
@@ -295,7 +298,7 @@ export function Settings({
                           <Smile className="w-4 h-4" />
                           <span className="text-sm font-medium">Choose an emoji:</span>
                         </div>
-                        <Button size="sm" variant="neutral" onClick={cancelEmojiEdit}>
+                        <Button size="sm" variant="ghost" onClick={cancelEmojiEdit}>
                           <X className="w-3 h-3" />
                         </Button>
                       </div>
@@ -327,7 +330,7 @@ export function Settings({
           <Button
             onClick={handleSaveSettings}
             disabled={saving || loading}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-full"
           >
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save'}

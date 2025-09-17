@@ -184,7 +184,7 @@ export function FormReport({ expenses, incomes, loading, error, onRefresh }: For
     return (
       <div className="p-6 text-center">
         <p className="text-red-600 mb-4">Error: {error}</p>
-        <Button onClick={refreshData} variant="neutral">
+        <Button onClick={refreshData} variant="outline">
           <RefreshCw className="h-4 w-4 mr-2" />
           Retry
         </Button>

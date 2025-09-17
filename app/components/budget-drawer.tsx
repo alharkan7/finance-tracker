@@ -87,7 +87,7 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
         const budgets: BudgetData[] = data.budgets || []
         
         // DEBUG: Log raw budget data from API
-        console.log('DEBUG raw budget data from API:', budgets)
+        // console.log('DEBUG raw budget data from API:', budgets)
 
         // Group budgets by month
         const monthlyBudgets: MonthlyBudget[] = []
@@ -99,13 +99,13 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
           const month = `${budgetDate.getFullYear()}-${String(budgetDate.getMonth() + 1).padStart(2, '0')}`
           
           // DEBUG: Log each budget processing
-          console.log('DEBUG processing budget:', {
-            budget,
-            extractedMonth: month,
-            originalDate: budget.date,
-            parsedDate: budgetDate,
-            fixedMonth: month
-          })
+          // console.log('DEBUG processing budget:', {
+          //   budget,
+          //   extractedMonth: month,
+          //   originalDate: budget.date,
+          //   parsedDate: budgetDate,
+          //   fixedMonth: month
+          // })
           
           if (!monthMap.has(month)) {
             monthMap.set(month, [])
@@ -147,14 +147,14 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
     const monthBudget = allBudgets.find(budget => budget.month === currentMonthKey)
     
     // DEBUG: Log the lookup
-    console.log('DEBUG getCurrentMonthBudget:', {
-      currentMonth,
-      currentMonthJS: currentMonth.getMonth(),
-      currentMonthDisplay: currentMonth.getMonth() + 1,
-      currentMonthKey,
-      availableBudgets: allBudgets.map(b => b.month),
-      foundBudget: monthBudget
-    })
+    // console.log('DEBUG getCurrentMonthBudget:', {
+    //   currentMonth,
+    //   currentMonthJS: currentMonth.getMonth(),
+    //   currentMonthDisplay: currentMonth.getMonth() + 1,
+    //   currentMonthKey,
+    //   availableBudgets: allBudgets.map(b => b.month),
+    //   foundBudget: monthBudget
+    // })
 
     if (monthBudget) {
       setBudgetAmount(monthBudget.amount)
@@ -179,14 +179,14 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
       const { firstDay } = getMonthRange(currentMonth)
       
       // DEBUG: Log the values being used
-      console.log('DEBUG saveBudget:', {
-        currentMonth,
-        currentMonthJS: currentMonth.getMonth(),
-        currentMonthDisplay: currentMonth.getMonth() + 1,
-        firstDay,
-        propCurrentMonth,
-        propCurrentYear
-      })
+      // console.log('DEBUG saveBudget:', {
+      //   currentMonth,
+      //   currentMonthJS: currentMonth.getMonth(),
+      //   currentMonthDisplay: currentMonth.getMonth() + 1,
+      //   firstDay,
+      //   propCurrentMonth,
+      //   propCurrentYear
+      // })
 
       const response = await fetch('/api/submit-budget', {
         method: 'POST',
@@ -269,11 +269,11 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
   // propCurrentMonth is 0-based (0 = January, 11 = December) from page.tsx
   useEffect(() => {
     if (propCurrentMonth !== undefined && propCurrentYear !== undefined) {
-      console.log('DEBUG budget drawer props update:', {
-        propCurrentMonth,
-        propCurrentYear,
-        newDateObject: new Date(propCurrentYear, propCurrentMonth, 1)
-      })
+      // console.log('DEBUG budget drawer props update:', {
+      //   propCurrentMonth,
+      //   propCurrentYear,
+      //   newDateObject: new Date(propCurrentYear, propCurrentMonth, 1)
+      // })
       setCurrentMonth(new Date(propCurrentYear, propCurrentMonth, 1))
     }
   }, [propCurrentMonth, propCurrentYear])
@@ -314,9 +314,9 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
     <div className={`fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end transition-all duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={handleClose}>
       <div className={`w-full max-w-sm mx-auto bg-white rounded-t-3xl shadow-lg transform transition-transform duration-300 ease-in-out ${isAnimating ? 'translate-y-0' : 'translate-y-full'}`} onClick={(e) => e.stopPropagation()}>
         {/* Header with month navigation */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
           <Button
-            variant="neutral"
+            variant="ghost"
             size="sm"
             onClick={goToPreviousMonth}
             className="p-1"
@@ -330,7 +330,7 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
           </h2>
 
           <Button
-            variant="neutral"
+            variant="ghost"
             size="sm"
             onClick={goToNextMonth}
             className="p-1"
@@ -344,7 +344,7 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
         <div className="p-6 space-y-6">
           {/* Budget Amount */}
           <div className="text-center">
-            <div className="flex items-center justify-center mb-4">
+            <div className="flex items-center justify-center">
               <p className="text-sm text-gray-600">Monthly Budget</p>
               {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin text-blue-500" />}
             </div>
@@ -409,30 +409,32 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
         </div>
 
         {/* Action buttons */}
+        {isEditing && (
+
         <div className="p-4 border-t border-gray-200">
           <div className="flex gap-2">
             {isEditing && hasChanges && (
               <Button
                 onClick={saveBudget}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2"
+                className="flex-1 flex items-center justify-center gap-2 rounded-full"
               >
                 <Save className="w-4 h-4" />
                 Save
               </Button>
             )}
-            {isEditing && (
               <Button
                 onClick={cancelEditing}
-                variant="neutral"
-                className="flex-1"
+                variant="outline"
+                className="flex-1 rounded-full"
                 disabled={loading}
               >
                 Cancel
               </Button>
-            )}
+            
           </div>
         </div>
+        )}
       </div>
     </div>
   )

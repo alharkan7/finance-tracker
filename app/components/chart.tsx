@@ -97,7 +97,7 @@ export function Chart({
   // Prepare line chart data (daily aggregation) - memoized to prevent constant recalculation
   const lineChartData = useMemo(() => {
     const dataToUse = mode === 'expense' ? expenses : incomes
-    
+
     // Filter data by current month and year, with better error handling
     const filteredData = dataToUse.filter(item => {
       if (!item || !item.date) return false
@@ -152,7 +152,7 @@ export function Chart({
 
     const maxValue = Math.max(...lineChartData.map(d => d.amount))
     const minValue = Math.min(...lineChartData.map(d => d.amount))
-    
+
     // If all values are zero, use a default range
     if (maxValue === 0) {
       return { domain: [0, 100000], tickFormatter: (value: number) => `${(value / 1000).toFixed(0)}k` }
@@ -160,7 +160,7 @@ export function Chart({
 
     // Add some padding to the max value (20% above the highest value)
     const paddedMax = maxValue * 1.2
-    
+
     // Determine the best unit and formatter based on the data range
     let tickFormatter: (value: number) => string
     let domain: [number, number]
@@ -266,11 +266,10 @@ export function Chart({
           <button
             onClick={() => onNavigateMonth('prev')}
             disabled={!canNavigatePrevInternal}
-            className={`p-1 rounded-full transition-colors ${
-              canNavigatePrevInternal
+            className={`p-1 rounded-full transition-colors ${canNavigatePrevInternal
                 ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
                 : 'text-gray-300 cursor-not-allowed'
-            }`}
+              }`}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -280,16 +279,15 @@ export function Chart({
           <button
             onClick={() => onNavigateMonth('next')}
             disabled={!canNavigateNextInternal}
-            className={`p-1 rounded-full transition-colors ${
-              canNavigateNextInternal
+            className={`p-1 rounded-full transition-colors ${canNavigateNextInternal
                 ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
                 : 'text-gray-300 cursor-not-allowed'
-            }`}
+              }`}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        
+
         {/* Balance and Budget Info - Always show regardless of chart type */}
         <div className="flex items-center justify-center gap-2">
           <h1 className="text-2xl font-bold text-gray-900 break-words">
@@ -305,7 +303,7 @@ export function Chart({
             </button>
           )}
         </div>
-        
+
         <div className="text-center mt-2">
           <p className="text-xs text-gray-500">
             Budget: Rp {Math.floor(monthlyBudget).toLocaleString('id-ID')}
@@ -397,65 +395,65 @@ export function Chart({
                     bottom: 5,
                   }}
                 >
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                domain={yAxisConfig.domain}
-                tickFormatter={yAxisConfig.tickFormatter}
-              />
-              <Tooltip
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length && label) {
-                    const value = payload[0].value as number
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                    const formattedDate = `${parseInt(label.toString())} ${monthNames[currentMonth]}`
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    domain={yAxisConfig.domain}
+                    tickFormatter={yAxisConfig.tickFormatter}
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length && label) {
+                        const value = payload[0].value as number
+                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                        const formattedDate = `${parseInt(label.toString())} ${monthNames[currentMonth]}`
 
-                    return (
-                      <div style={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                        padding: '12px',
-                        fontSize: '12px'
-                      }}>
-                        <div style={{
-                          fontSize: '14px',
-                          fontWeight: 'bold',
-                          color: '#374151',
-                          marginBottom: '4px'
-                        }}>
-                          {value.toLocaleString('id-ID')}
-                        </div>
-                        <div style={{
-                          fontSize: '12px',
-                          color: '#6b7280'
-                        }}>
-                          {formattedDate}
-                        </div>
-                      </div>
-                    )
-                  }
-                  return null
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="amount"
-                stroke={mode === 'expense' ? '#ef4444' : '#10b981'}
-                strokeWidth={2}
-                dot={{ fill: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2, r: 3 }}
-                activeDot={{ r: 5, stroke: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2 }}
-              />
-              </LineChart>
-            </ResponsiveContainer>
+                        return (
+                          <div style={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                            padding: '12px',
+                            fontSize: '12px'
+                          }}>
+                            <div style={{
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              color: '#374151',
+                              marginBottom: '4px'
+                            }}>
+                              {value.toLocaleString('id-ID')}
+                            </div>
+                            <div style={{
+                              fontSize: '12px',
+                              color: '#6b7280'
+                            }}>
+                              {formattedDate}
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="amount"
+                    stroke={mode === 'expense' ? '#ef4444' : '#10b981'}
+                    strokeWidth={2}
+                    dot={{ fill: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 5, stroke: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             ) : (
               <div className="h-40 flex items-center justify-center text-gray-500 text-sm">
                 No data available for this month
@@ -465,36 +463,22 @@ export function Chart({
         )}
       </div>
 
-      {/* Chart Legend */}
-      {/* {data.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          {data.map((entry, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: entry.color }}
-              ></div>
-              <span className="truncate">{entry.name}: Rp {entry.value.toLocaleString('id-ID')}</span>
-            </div>
-          ))}
-        </div>
-      )} */}
-
       <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
-        <span className={`flex items-center justify-center gap-1 px-2 py-1 rounded-full transition-all duration-200 ${mode === 'income'
-            ? 'bg-green-100 text-green-800 font-bold shadow-sm'
-            : 'text-green-600'
-          }`}>
-          <Plus className="w-4 h-4" />
-          {totalIncome.toLocaleString('id-ID')}
-        </span>
         <span className={`flex items-center justify-center gap-1 px-2 py-1 rounded-full transition-all duration-200 ${mode === 'expense'
-            ? 'bg-red-100 text-red-800 font-bold shadow-sm'
-            : 'text-red-600'
+          ? 'bg-red-100 text-red-800 font-bold shadow-sm'
+          : 'text-red-600'
           }`}>
           <Minus className="w-4 h-4" />
           {totalExpenses.toLocaleString('id-ID')}
         </span>
+        <span className={`flex items-center justify-center gap-1 px-2 py-1 rounded-full transition-all duration-200 ${mode === 'income'
+          ? 'bg-green-100 text-green-800 font-bold shadow-sm'
+          : 'text-green-600'
+          }`}>
+          <Plus className="w-4 h-4" />
+          {totalIncome.toLocaleString('id-ID')}
+        </span>
+
       </div>
     </div>
   )

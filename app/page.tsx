@@ -176,12 +176,12 @@ export default function MobileFinanceTracker() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   
   // DEBUG: Log the initial month state
-  console.log('DEBUG page.tsx initial state:', {
-    currentMonth,
-    currentYear,
-    realCurrentMonth: new Date().getMonth(),
-    realCurrentYear: new Date().getFullYear()
-  })
+  // console.log('DEBUG page.tsx initial state:', {
+  //   currentMonth,
+  //   currentYear,
+  //   realCurrentMonth: new Date().getMonth(),
+  //   realCurrentYear: new Date().getFullYear()
+  // })
   
   // Filter data by selected month with better error handling
   const filterDataByMonth = (data: any[]) => {
@@ -271,7 +271,7 @@ export default function MobileFinanceTracker() {
     const budgetMap: {[key: string]: number} = {}
     
     // DEBUG: Log raw budget data
-    console.log('DEBUG page.tsx processBudgetData raw data:', budgets)
+    // console.log('DEBUG page.tsx processBudgetData raw data:', budgets)
 
     budgets.forEach((budget: any) => {
       // Fix timezone issue: parse the date and extract year-month in local timezone
@@ -279,13 +279,13 @@ export default function MobileFinanceTracker() {
       const monthKey = `${budgetDate.getFullYear()}-${String(budgetDate.getMonth() + 1).padStart(2, '0')}`
       
       // DEBUG: Log each budget processing in page.tsx
-      console.log('DEBUG page.tsx processing budget:', {
-        budget,
-        extractedMonthKey: monthKey,
-        originalDate: budget.date,
-        parsedDate: budgetDate,
-        fixedMonthKey: monthKey
-      })
+      // console.log('DEBUG page.tsx processing budget:', {
+      //   budget,
+      //   extractedMonthKey: monthKey,
+      //   originalDate: budget.date,
+      //   parsedDate: budgetDate,
+      //   fixedMonthKey: monthKey
+      // })
       
       // For comparison, we need to use the same monthKey logic for finding existing budgets
       if (!budgetMap[monthKey] || new Date(budget.timestamp) > new Date(budgets.find((b: any) => {
@@ -341,13 +341,13 @@ export default function MobileFinanceTracker() {
     const budget = allBudgets[monthKey] || 0
     
     // DEBUG: Log the lookup
-    console.log('DEBUG getBudgetForMonth:', {
-      month,
-      year,
-      monthKey,
-      budget,
-      allBudgets: Object.keys(allBudgets)
-    })
+    // console.log('DEBUG getBudgetForMonth:', {
+    //   month,
+    //   year,
+    //   monthKey,
+    //   budget,
+    //   allBudgets: Object.keys(allBudgets)
+    // })
     
     return budget
   }
@@ -824,8 +824,8 @@ export default function MobileFinanceTracker() {
       {/* Bottom Navigation */}
       <div className="flex gap-2 p-3 mb-1 bg-white w-full flex-shrink-0 rounded-b-lg">
         <Button
-          variant="neutral"
-          className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent"
+          variant="outline"
+          className="rounded-full flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent"
           onClick={() => setIsBudgetDrawerOpen(true)}
         >
           <Zap className="w-3 h-3 mr-1" />
@@ -839,7 +839,7 @@ export default function MobileFinanceTracker() {
           }
         }}>
           <DrawerTrigger asChild>
-            <Button variant="neutral" className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent">
+            <Button variant="outline" className="rounded-full flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent">
               <SettingsIcon className="w-3 h-3 mr-1" />
               Pengaturan
             </Button>
