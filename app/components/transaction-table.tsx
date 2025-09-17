@@ -442,7 +442,7 @@ export function TransactionTable({
           </div>
 
           {/* Transaction List */}
-          <div className="space-y-2 max-h-[calc(72vh-10rem)] overflow-y-auto">
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto pb-0">
             {processedData.length === 0 ? (
               <div className="text-center py-8 text-gray-500 text-sm">
                 Tidak ada transaksi untuk bulan ini
@@ -562,25 +562,27 @@ export function TransactionTable({
             )}
           </div>
 
-          {/* Summary */}
+          {/* Summary - Fixed at bottom */}
           {processedData.length > 0 && (
-            <div className="pt-2 border-t">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">
-                  Total ({processedData.length} transaksi):
-                </span>
-                <span className={`text-sm font-bold ${
-                  activeTab === 'expense' ? 'text-red-600' : 'text-green-600'
-                }`}>
-                  {formatAmount(
-                    processedData.reduce((sum, transaction) => {
-                      const amount = typeof transaction.amount === 'number' 
-                        ? transaction.amount 
-                        : parseFloat(String(transaction.amount) || '0')
-                      return sum + (isNaN(amount) ? 0 : amount)
-                    }, 0)
-                  )}
-                </span>
+            <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-4">
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-4 py-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">
+                    Total ({processedData.length} transaksi):
+                  </span>
+                  <span className={`text-sm font-bold ${
+                    activeTab === 'expense' ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {formatAmount(
+                      processedData.reduce((sum, transaction) => {
+                        const amount = typeof transaction.amount === 'number' 
+                          ? transaction.amount 
+                          : parseFloat(String(transaction.amount) || '0')
+                        return sum + (isNaN(amount) ? 0 : amount)
+                      }, 0)
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           )}

@@ -386,7 +386,7 @@ export function Chart({
                     cx="50%"
                     cy="50%"
                     innerRadius={50}
-                    outerRadius={80}
+                    outerRadius={75}
                     dataKey="value"
                     onClick={handlePieClick}
                   >

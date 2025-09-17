@@ -815,7 +815,7 @@ export default function MobileFinanceTracker() {
         </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-white rounded-t-3xl p-4 w-full overflow-hidden flex flex-col items-center relative">
+      <div className="flex-1 bg-white rounded-t-3xl px-4 pt-4 pb-0 w-full overflow-hidden flex flex-col items-center relative">
 
         {/* Chart or Transaction Table Section */}
         <div className="w-full h-full relative overflow-hidden">
