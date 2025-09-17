@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
-import { Plus, Minus, Loader2, ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { Plus, Minus, Loader2, ChevronLeft, ChevronRight, Info, List } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface ChartData {
@@ -32,6 +32,7 @@ interface ChartProps {
   budgetLoading: boolean;
   budgetsLoaded: boolean;
   onOpenBudgetDrawer: () => void;
+  onShowDetails?: () => void;
 }
 
 export function Chart({
@@ -54,7 +55,8 @@ export function Chart({
   monthlyBudget,
   budgetLoading,
   budgetsLoaded,
-  onOpenBudgetDrawer
+  onOpenBudgetDrawer,
+  onShowDetails
 }: ChartProps) {
   // Calculate navigation limits internally to avoid infinite loops
   const getDateLimits = () => {
@@ -189,6 +191,29 @@ export function Chart({
   }, [lineChartData])
   const [selectedSegment, setSelectedSegment] = useState<ChartData | null>(null)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+  
+  // Animation state for chart type switching
+  const [isChartAnimating, setIsChartAnimating] = useState(false)
+  const [chartAnimationDirection, setChartAnimationDirection] = useState<'left' | 'right'>('right')
+
+  // Animation functions for chart type switching
+  const switchToLineChartWithAnimation = () => {
+    setChartAnimationDirection('left')
+    setIsChartAnimating(true)
+    onChartTypeSwitch('line')
+    setTimeout(() => {
+      setIsChartAnimating(false)
+    }, 300)
+  }
+
+  const switchToDonutChartWithAnimation = () => {
+    setChartAnimationDirection('right')
+    setIsChartAnimating(true)
+    onChartTypeSwitch('donut')
+    setTimeout(() => {
+      setIsChartAnimating(false)
+    }, 300)
+  }
 
   const handlePieClick = (data: any, index: number) => {
     if (data && index !== undefined) {
@@ -312,12 +337,12 @@ export function Chart({
         </div>
       </div>
 
-      {/* Chart Container */}
-      <div className="h-46 p-2 w-full mx-auto max-w-full relative flex items-center justify-center">
+      {/* Chart Container with Animation */}
+      <div className="h-46 p-2 w-full mx-auto max-w-full relative overflow-hidden">
         {/* Chart Type Navigation */}
         {chartType === 'line' && (
           <button
-            onClick={() => onChartTypeSwitch('donut')}
+            onClick={switchToDonutChartWithAnimation}
             className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 p-1 text-gray-600 hover:text-gray-800 transition-colors"
             title="Switch to Chart view"
           >
@@ -326,7 +351,7 @@ export function Chart({
         )}
         {chartType === 'donut' && (
           <button
-            onClick={() => onChartTypeSwitch('line')}
+            onClick={switchToLineChartWithAnimation}
             className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 p-1 text-gray-600 hover:text-gray-800 transition-colors"
             title="Switch to Trend view"
           >
@@ -334,133 +359,159 @@ export function Chart({
           </button>
         )}
 
-        {chartType === 'donut' ? (
-          <div className="h-40 w-40 mx-auto max-w-full relative rounded-lg overflow-hidden">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsPieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  dataKey="value"
-                  onClick={handlePieClick}
-                >
-                  {data.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  ))}
-                </Pie>
-              </RechartsPieChart>
-            </ResponsiveContainer>
+        {/* Details Button */}
+        {onShowDetails && (
+          <button
+            onClick={onShowDetails}
+            className="absolute top-2 right-2 z-10 text-gray-600 hover:text-gray-800 transition-colors bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:shadow-md"
+            title="View transaction details"
+          >
+            <List className="w-4 h-4" />
+          </button>
+        )}
 
-            {/* Invisible trigger for popover positioning */}
-            <div className="absolute opacity-0 pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <button className="w-0 h-0" />
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-4 bg-white rounded-xl shadow-lg border" side="top" align="center">
-                  {selectedSegment && (
-                    <div className="text-center space-y-2">
-                      <div className="font-medium text-sm text-gray-900">
-                        {selectedSegment.name}
+        {/* Chart Views Container */}
+        <div className="w-full h-full relative">
+          {/* Donut Chart Section */}
+          <div 
+            className={`absolute inset-0 transition-transform duration-300 ease-in-out flex items-center justify-center ${
+              chartType === 'line' ? 'transform -translate-x-full' : 'transform translate-x-0'
+            }`}
+          >
+            <div className="h-40 w-40 mx-auto max-w-full relative rounded-lg overflow-hidden">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsPieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    dataKey="value"
+                    onClick={handlePieClick}
+                  >
+                    {data.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    ))}
+                  </Pie>
+                </RechartsPieChart>
+              </ResponsiveContainer>
+
+              {/* Invisible trigger for popover positioning */}
+              <div className="absolute opacity-0 pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <button className="w-0 h-0" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-4 bg-white rounded-xl shadow-lg border" side="top" align="center">
+                    {selectedSegment && (
+                      <div className="text-center space-y-2">
+                        <div className="font-medium text-sm text-gray-900">
+                          {selectedSegment.name}
+                        </div>
+                        <div className="text-lg font-bold text-gray-900">
+                          Rp {selectedSegment.value.toLocaleString('id-ID')}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {((selectedSegment.value / (mode === 'expense' ? totalExpenses : totalIncome)) * 100).toFixed(1)}% of {mode === 'expense' ? 'Expenses' : 'Income'}
+                        </div>
                       </div>
-                      <div className="text-lg font-bold text-gray-900">
-                        Rp {selectedSegment.value.toLocaleString('id-ID')}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {((selectedSegment.value / (mode === 'expense' ? totalExpenses : totalIncome)) * 100).toFixed(1)}% of {mode === 'expense' ? 'Expenses' : 'Income'}
-                      </div>
-                    </div>
-                  )}
-                </PopoverContent>
-              </Popover>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            {lineChartData && lineChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart
-                  data={lineChartData}
-                  margin={{
-                    top: 5,
-                    right: 20,
-                    left: 10,
-                    bottom: 5,
-                  }}
-                >
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    domain={yAxisConfig.domain}
-                    tickFormatter={yAxisConfig.tickFormatter}
-                  />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload.length && label) {
-                        const value = payload[0].value as number
-                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                        const formattedDate = `${parseInt(label.toString())} ${monthNames[currentMonth]}`
 
-                        return (
-                          <div style={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                            padding: '12px',
-                            fontSize: '12px'
-                          }}>
-                            <div style={{
-                              fontSize: '14px',
-                              fontWeight: 'bold',
-                              color: '#374151',
-                              marginBottom: '4px'
-                            }}>
-                              {value.toLocaleString('id-ID')}
-                            </div>
-                            <div style={{
-                              fontSize: '12px',
-                              color: '#6b7280'
-                            }}>
-                              {formattedDate}
-                            </div>
-                          </div>
-                        )
-                      }
-                      return null
+          {/* Line Chart Section */}
+          <div 
+            className={`absolute inset-0 transition-transform duration-300 ease-in-out flex items-center justify-center ${
+              chartType === 'line' ? 'transform translate-x-0' : 'transform translate-x-full'
+            }`}
+          >
+            <div className="w-full h-full flex items-center justify-center">
+              {lineChartData && lineChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={160}>
+                  <LineChart
+                    data={lineChartData}
+                    margin={{
+                      top: 5,
+                      right: 20,
+                      left: 10,
+                      bottom: 5,
                     }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke={mode === 'expense' ? '#ef4444' : '#10b981'}
-                    strokeWidth={2}
-                    dot={{ fill: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2, r: 3 }}
-                    activeDot={{ r: 5, stroke: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-40 flex items-center justify-center text-gray-500 text-sm">
-                No data available for this month
-              </div>
-            )}
+                  >
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      domain={yAxisConfig.domain}
+                      tickFormatter={yAxisConfig.tickFormatter}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length && label) {
+                          const value = payload[0].value as number
+                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                          const formattedDate = `${parseInt(label.toString())} ${monthNames[currentMonth]}`
+
+                          return (
+                            <div style={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                              padding: '12px',
+                              fontSize: '12px'
+                            }}>
+                              <div style={{
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                color: '#374151',
+                                marginBottom: '4px'
+                              }}>
+                                {value.toLocaleString('id-ID')}
+                              </div>
+                              <div style={{
+                                fontSize: '12px',
+                                color: '#6b7280'
+                              }}>
+                                {formattedDate}
+                              </div>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke={mode === 'expense' ? '#ef4444' : '#10b981'}
+                      strokeWidth={2}
+                      dot={{ fill: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 5, stroke: mode === 'expense' ? '#ef4444' : '#10b981', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-40 flex items-center justify-center text-gray-500 text-sm">
+                  No data available for this month
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mt-2 text-sm">

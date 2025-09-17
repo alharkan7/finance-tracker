@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
-import { Bell, Settings as SettingsIcon, Zap, AlertTriangle, RefreshCw } from 'lucide-react'
+import { Bell, Settings as SettingsIcon, Zap, AlertTriangle, RefreshCw, ChevronLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
 import { ExpenseForm } from './components/expense-form'
+import { TransactionTable } from './components/transaction-table'
 import { Settings } from './components/sheet-settings'
 import { BudgetDrawer } from './components/budget-drawer'
 import { LoadingSkeleton } from './components/loading-skeleton'
@@ -149,6 +150,7 @@ export default function MobileFinanceTracker() {
   const [chartData, setChartData] = useState(mockChartData)
   const [chartMode, setChartMode] = useState<'income' | 'expense'>('expense')
   const [chartType, setChartType] = useState<'donut' | 'line'>('donut')
+  const [showTransactionTable, setShowTransactionTable] = useState(false)
 
   // Categories state
   const [expenseCategories, setExpenseCategories] = useState<Category[]>([])
@@ -174,6 +176,32 @@ export default function MobileFinanceTracker() {
   // Month filter state
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+
+  // Animation state for smooth transitions
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right'>('right')
+
+  // Animation functions
+  const showTransactionTableWithAnimation = () => {
+    setAnimationDirection('left')
+    setIsAnimating(true)
+    // Start animation immediately
+    setShowTransactionTable(true)
+    // End animation after transition completes
+    setTimeout(() => {
+      setIsAnimating(false)
+    }, 300)
+  }
+
+  const hideTransactionTableWithAnimation = () => {
+    setAnimationDirection('right')
+    setIsAnimating(true)
+    // Wait for animation to complete before hiding
+    setTimeout(() => {
+      setShowTransactionTable(false)
+      setIsAnimating(false)
+    }, 300)
+  }
   
   // DEBUG: Log the initial month state
   // console.log('DEBUG page.tsx initial state:', {
@@ -787,38 +815,71 @@ export default function MobileFinanceTracker() {
         </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-white rounded-t-3xl p-4 w-full overflow-y-auto flex flex-col items-center">
+      <div className="flex-1 bg-white rounded-t-3xl p-4 w-full overflow-hidden flex flex-col items-center relative">
 
-        {/* Chart Section */}
-        <Chart
-            data={chartData}
-            totalIncome={totalIncome}
-            totalExpenses={totalExpenses}
-            balance={balance}
-            loading={loading}
-            mode={chartMode}
-            chartType={chartType}
-            currentMonth={currentMonth}
-            currentYear={currentYear}
-            onNavigateMonth={navigateMonth}
-            onChartTypeSwitch={handleChartTypeSwitch}
-            canNavigatePrev={false}
-            canNavigateNext={false}
-            getMonthName={getMonthName}
-            expenses={expenses}
-            incomes={incomes}
-            monthlyBudget={monthlyBudget}
-            budgetLoading={budgetLoading}
-            budgetsLoaded={budgetsLoaded}
-            onOpenBudgetDrawer={() => setIsBudgetDrawerOpen(true)}
-          />
+        {/* Chart or Transaction Table Section */}
+        <div className="w-full h-full relative">
+          {/* Chart Section */}
+          <div 
+            className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
+              showTransactionTable ? 'transform -translate-x-full' : 'transform translate-x-0'
+            }`}
+          >
+            <div className="w-full flex flex-col items-center overflow-y-auto">
+              <Chart
+                data={chartData}
+                totalIncome={totalIncome}
+                totalExpenses={totalExpenses}
+                balance={balance}
+                loading={loading}
+                mode={chartMode}
+                chartType={chartType}
+                currentMonth={currentMonth}
+                currentYear={currentYear}
+                onNavigateMonth={navigateMonth}
+                onChartTypeSwitch={handleChartTypeSwitch}
+                canNavigatePrev={false}
+                canNavigateNext={false}
+                getMonthName={getMonthName}
+                expenses={expenses}
+                incomes={incomes}
+                monthlyBudget={monthlyBudget}
+                budgetLoading={budgetLoading}
+                budgetsLoaded={budgetsLoaded}
+                onOpenBudgetDrawer={() => setIsBudgetDrawerOpen(true)}
+                onShowDetails={showTransactionTableWithAnimation}
+              />
 
-        {/* Form Section - Always show */}
-        <ExpenseForm
-          onSubmit={handleFormSubmit}
-          loading={formLoading}
-          onCategorySwitch={handleCategorySwitch}
-        />
+              {/* Form Section - Only show when chart is visible */}
+              <ExpenseForm
+                onSubmit={handleFormSubmit}
+                loading={formLoading}
+                onCategorySwitch={handleCategorySwitch}
+              />
+            </div>
+          </div>
+
+          {/* Transaction Table Section */}
+          <div 
+            className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
+              showTransactionTable ? 'transform translate-x-0' : 'transform translate-x-full'
+            }`}
+          >
+            <div className="w-full flex flex-col items-center overflow-y-auto">
+              <TransactionTable
+                expenses={expenses}
+                incomes={incomes}
+                loading={loading}
+                currentMonth={currentMonth}
+                currentYear={currentYear}
+                onNavigateMonth={navigateMonth}
+                getMonthName={getMonthName}
+                onBackClick={hideTransactionTableWithAnimation}
+                onRefreshData={() => fetchData(true)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Navigation */}
