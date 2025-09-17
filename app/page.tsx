@@ -925,9 +925,12 @@ export default function MobileFinanceTracker() {
 
         {/* Footer */}
         <div className="flex-shrink-0 text-center mb-1">
+          <span className="text-xs text-white/70">
+            © {new Date().getFullYear()} |
+          </span>
           <button
             onClick={() => window.open('mailto:diananurindrasari94@gmail.com')}
-            className="text-xs text-white/70 hover:text-white cursor-pointer transition-colors"
+            className="text-xs text-white/70 hover:text-white cursor-pointer transition-colors ml-1"
           >
             Tim Peneliti DIPA Polinema
           </button>
