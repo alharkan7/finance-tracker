@@ -144,6 +144,44 @@ export function Chart({
     return lineData
   }, [mode, expenses, incomes, currentMonth, currentYear])
 
+  // Calculate dynamic Y-axis properties based on the data
+  const yAxisConfig = useMemo(() => {
+    if (!lineChartData || lineChartData.length === 0) {
+      return { domain: [0, 100000], tickFormatter: (value: number) => `${(value / 1000).toFixed(0)}k` }
+    }
+
+    const maxValue = Math.max(...lineChartData.map(d => d.amount))
+    const minValue = Math.min(...lineChartData.map(d => d.amount))
+    
+    // If all values are zero, use a default range
+    if (maxValue === 0) {
+      return { domain: [0, 100000], tickFormatter: (value: number) => `${(value / 1000).toFixed(0)}k` }
+    }
+
+    // Add some padding to the max value (20% above the highest value)
+    const paddedMax = maxValue * 1.2
+    
+    // Determine the best unit and formatter based on the data range
+    let tickFormatter: (value: number) => string
+    let domain: [number, number]
+
+    if (paddedMax >= 1000000) {
+      // Use millions (M) for values >= 1M
+      tickFormatter = (value: number) => `${(value / 1000000).toFixed(1)}M`
+      domain = [0, Math.ceil(paddedMax / 100000) * 100000] // Round up to nearest 100k
+    } else if (paddedMax >= 1000) {
+      // Use thousands (k) for values >= 1k
+      tickFormatter = (value: number) => `${(value / 1000).toFixed(0)}k`
+      domain = [0, Math.ceil(paddedMax / 1000) * 1000] // Round up to nearest 1k
+    } else {
+      // Use raw values for small amounts
+      tickFormatter = (value: number) => value.toString()
+      domain = [0, Math.ceil(paddedMax / 100) * 100] // Round up to nearest 100
+    }
+
+    return { domain, tickFormatter }
+  }, [lineChartData])
+
   // Debug: log line chart data
   React.useEffect(() => {
     console.log('Line chart data:', lineChartData)
@@ -270,7 +308,7 @@ export function Chart({
         
         <div className="text-center mt-2">
           <p className="text-xs text-gray-500">
-            Budget: Rp {monthlyBudget.toLocaleString('id-ID')}
+            Budget: Rp {Math.floor(monthlyBudget).toLocaleString('id-ID')}
             {!budgetsLoaded && <Loader2 className="inline w-3 h-3 ml-1 animate-spin" />}
           </p>
         </div>
@@ -369,7 +407,8 @@ export function Chart({
                 tick={{ fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                domain={yAxisConfig.domain}
+                tickFormatter={yAxisConfig.tickFormatter}
               />
               <Tooltip
                 content={({ active, payload, label }) => {

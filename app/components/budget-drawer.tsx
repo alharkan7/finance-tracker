@@ -21,7 +21,7 @@ interface MonthlyBudget {
 
 interface BudgetDrawerProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (hasChanges?: boolean) => void;
   currentMonth?: number;
   currentYear?: number;
 }
@@ -38,6 +38,7 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
   const [isAnimating, setIsAnimating] = useState(false)
   const [allBudgets, setAllBudgets] = useState<MonthlyBudget[]>([])
   const [dataLoaded, setDataLoaded] = useState(false)
+  const [dataSaved, setDataSaved] = useState(false)
 
   // Format month and year for display
   const formatMonthYear = (date: Date) => {
@@ -220,6 +221,7 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
         setBudgetAmount(amount)
         setIsEditing(false)
         setHasChanges(false)
+        setDataSaved(true)
         toast.success('Budget saved successfully!')
       } else {
         const errorData = await response.json()
@@ -254,6 +256,13 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
     if (isEditing) {
       setHasChanges(true)
     }
+  }
+
+  // Handle drawer close
+  const handleClose = () => {
+    onClose(dataSaved)
+    // Reset the dataSaved flag for next time
+    setDataSaved(false)
   }
 
   // Update current month when props change
@@ -302,7 +311,7 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
   if (!isVisible) return null
 
   return (
-    <div className={`fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end transition-all duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}>
+    <div className={`fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end transition-all duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={handleClose}>
       <div className={`w-full max-w-sm mx-auto bg-white rounded-t-3xl shadow-lg transform transition-transform duration-300 ease-in-out ${isAnimating ? 'translate-y-0' : 'translate-y-full'}`} onClick={(e) => e.stopPropagation()}>
         {/* Header with month navigation */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">

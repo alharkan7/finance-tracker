@@ -742,7 +742,7 @@ export default function MobileFinanceTracker() {
       <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-3 w-full flex-shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="relative">
               <Bell
                 className="w-5 h-5 text-white cursor-pointer"
@@ -763,7 +763,7 @@ export default function MobileFinanceTracker() {
               )}
             </div>
             <RefreshCw
-              className="w-5 h-5 text-white cursor-pointer hover:text-white/80 transition-colors"
+              className="w-4 h-4 text-white cursor-pointer hover:text-white/80 transition-colors"
               onClick={async () => {
                 try {
                   clearCache()
@@ -891,11 +891,13 @@ export default function MobileFinanceTracker() {
         {/* Budget Drawer */}
         <BudgetDrawer
           isOpen={isBudgetDrawerOpen}
-          onClose={() => {
+          onClose={(hasChanges) => {
             setIsBudgetDrawerOpen(false)
-            // Refresh all budget data when drawer closes
-            setBudgetsLoaded(false)
-            fetchAllBudgets()
+            // Only refresh budget data if changes were actually saved
+            if (hasChanges) {
+              setBudgetsLoaded(false)
+              fetchAllBudgets()
+            }
           }}
           currentMonth={currentMonth}
           currentYear={currentYear}
