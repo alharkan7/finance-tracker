@@ -883,7 +883,7 @@ export default function MobileFinanceTracker() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="flex gap-2 p-3 mb-1 bg-white w-full flex-shrink-0 rounded-b-lg">
+      <div className="flex gap-2 p-3 mb-0 bg-white w-full flex-shrink-0 rounded-b-lg">
         <Button
           variant="outline"
           className="rounded-full flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent"
@@ -925,7 +925,12 @@ export default function MobileFinanceTracker() {
 
         {/* Footer */}
         <div className="flex-shrink-0 text-center mb-1">
-          <p className="text-xs text-white/70">Tim Peneliti DIPA Polinema</p>
+          <button
+            onClick={() => window.open('mailto:diananurindrasari94@gmail.com')}
+            className="text-xs text-white/70 hover:text-white cursor-pointer transition-colors"
+          >
+            Tim Peneliti DIPA Polinema
+          </button>
         </div>
 
         {/* Budget Alert Dialog */}

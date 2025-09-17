@@ -46,7 +46,7 @@ export function LoadingSkeleton() {
 
             {/* Chart Container skeleton */}
             <div className="h-46 p-2 w-full mx-auto max-w-full relative flex items-center justify-center">
-              <div className="h-40 w-40 mx-auto max-w-full relative rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+              <div className="h-40 w-40 mx-auto max-w-full relative rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
                 <div className="text-center">
                   <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto" />
                   <p className="text-gray-600 mt-2 text-sm">Loading...</p>
@@ -76,7 +76,7 @@ export function LoadingSkeleton() {
         </div>
 
         {/* Bottom Navigation Skeleton */}
-        <div className="flex gap-2 p-3 mb-1 bg-white w-full flex-shrink-0 rounded-b-lg">
+        <div className="flex gap-2 p-3 mb-0 bg-white w-full flex-shrink-0 rounded-b-lg">
           <div className="flex-1 h-8 bg-gray-100 rounded animate-pulse"></div>
           <div className="flex-1 h-8 bg-gray-100 rounded animate-pulse"></div>
         </div>

@@ -261,7 +261,7 @@ export function Chart({
 
         {/* Chart Container - responsive dimensions for mobile */}
         <div className="min-h-[120px] max-h-[200px] h-[25vh] p-2 w-full mx-auto max-w-full relative flex items-center justify-center">
-          <div className="min-h-[100px] max-h-[160px] h-[20vh] w-40 mx-auto max-w-full relative rounded-lg overflow-hidden flex items-center justify-center bg-gray-50">
+          <div className="min-h-[100px] max-h-[160px] h-[20vh] w-40 mx-auto max-w-full relative rounded-full overflow-hidden flex items-center justify-center bg-gray-50">
             <div className="text-center">
               <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto" />
               <p className="text-gray-600 mt-2 text-sm">Loading data...</p>
