@@ -820,6 +820,7 @@ export default function MobileFinanceTracker() {
                 incomeCategories={incomeCategories}
                 userEmail={session?.user?.email || ''}
                 loading={loading}
+                onCategoriesUpdated={fetchUserCategories}
               />
             </div>
           </DrawerContent>
@@ -833,13 +834,13 @@ export default function MobileFinanceTracker() {
 
         {/* Budget Alert Dialog */}
         <Dialog open={isBudgetAlertOpen} onOpenChange={setIsBudgetAlertOpen}>
-          <DialogContent className="max-w-[90vw] w-full mx-auto rounded-2xl">
+          <DialogContent className="w-full max-w-sm mx-auto rounded-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center gap-2 text-red-600 text-lg">
                 <AlertTriangle className="w-5 h-5" />
                 Budget Alert
               </DialogTitle>
-              <DialogDescription className="text-sm space-y-2">
+              <DialogDescription className="text-sm space-y-2 text-center">
                 <p className="text-gray-700">Your spending has exceeded your income by:</p>
                 <p className="text-xl font-bold text-red-600">
                   Rp {Math.abs(balance).toLocaleString('id-ID')}

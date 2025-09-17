@@ -12,13 +12,15 @@ interface SettingsProps {
   expenseCategories: Category[];
   incomeCategories: Category[];
   loading: boolean;
+  onCategoriesUpdated?: () => void;
 }
 
 export function Settings({
   userEmail,
   expenseCategories,
   incomeCategories,
-  loading
+  loading,
+  onCategoriesUpdated
 }: SettingsProps) {
   const [editingExpenseCategories, setEditingExpenseCategories] = useState<Category[]>(expenseCategories)
   const [editingIncomeCategories, setEditingIncomeCategories] = useState<Category[]>(incomeCategories)
@@ -43,7 +45,17 @@ export function Settings({
 
   const updateCategory = (type: 'expense' | 'income', index: number, field: 'value' | 'label', value: string) => {
     const categories = type === 'expense' ? [...editingExpenseCategories] : [...editingIncomeCategories]
-    categories[index] = { ...categories[index], [field]: value }
+    const currentCategory = categories[index]
+
+    // When updating label, also update the text part of value (keeping the emoji)
+    if (field === 'label') {
+      const emoji = currentCategory.value.split(' ')[0] || '' // Get emoji from current value
+      const newValue = emoji ? `${emoji} ${value}` : value
+      categories[index] = { ...currentCategory, label: value, value: newValue }
+    } else {
+      // When updating value directly, keep it as is
+      categories[index] = { ...currentCategory, [field]: value }
+    }
 
     if (type === 'expense') {
       setEditingExpenseCategories(categories)
@@ -83,15 +95,25 @@ export function Settings({
 
   const updateEmoji = (type: 'expense' | 'income', index: number, emoji: string) => {
     const categories = type === 'expense' ? [...editingExpenseCategories] : [...editingIncomeCategories]
-    const currentValue = categories[index].value
+    const currentCategory = categories[index]
+    const currentValue = currentCategory.value
 
     // Update the first character (emoji) while keeping the rest of the text
     const parts = currentValue.split(' ')
+    let newValue: string
+    let newLabel: string
+
     if (parts.length > 1) {
-      categories[index] = { ...categories[index], value: `${emoji} ${parts.slice(1).join(' ')}` }
+      // Has text after emoji, keep the text part
+      newValue = `${emoji} ${parts.slice(1).join(' ')}`
+      newLabel = parts.slice(1).join(' ')
     } else {
-      categories[index] = { ...categories[index], value: emoji }
+      // No text after emoji, use emoji as both value and label
+      newValue = emoji
+      newLabel = emoji
     }
+
+    categories[index] = { ...currentCategory, value: newValue, label: newLabel }
 
     if (type === 'expense') {
       setEditingExpenseCategories(categories)
@@ -127,6 +149,11 @@ export function Settings({
       }
 
       toast.success('Settings saved successfully!')
+
+      // Notify parent component to refresh categories
+      if (onCategoriesUpdated) {
+        onCategoriesUpdated()
+      }
     } catch (error) {
       console.error('Error saving settings:', error)
       toast.error('Failed to save settings')
