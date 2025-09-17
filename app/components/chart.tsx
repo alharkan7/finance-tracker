@@ -59,9 +59,16 @@ export function Chart({
   // Calculate navigation limits internally to avoid infinite loops
   const getDateLimits = () => {
     const allDates = [...expenses, ...incomes]
-      .map(item => item.date)
-      .filter(date => date)
-      .map(date => new Date(date))
+      .filter(item => item && item.date) // Better null checking
+      .map(item => {
+        try {
+          const date = new Date(item.date)
+          return isNaN(date.getTime()) ? null : date
+        } catch {
+          return null
+        }
+      })
+      .filter(date => date !== null) as Date[]
 
     if (allDates.length === 0) {
       const now = new Date()
@@ -90,18 +97,36 @@ export function Chart({
   // Prepare line chart data (daily aggregation) - memoized to prevent constant recalculation
   const lineChartData = useMemo(() => {
     const dataToUse = mode === 'expense' ? expenses : incomes
+    
+    // Filter data by current month and year, with better error handling
     const filteredData = dataToUse.filter(item => {
-      if (!item.date) return false
-      const itemDate = new Date(item.date)
-      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+      if (!item || !item.date) return false
+      try {
+        const itemDate = new Date(item.date)
+        // Check if date is valid
+        if (isNaN(itemDate.getTime())) return false
+        return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+      } catch (error) {
+        console.warn('Invalid date format in item:', item)
+        return false
+      }
     })
 
-    // Group by day
+    // Group by day with better error handling
     const dailyTotals: { [key: string]: number } = {}
     filteredData.forEach(item => {
-      const date = new Date(item.date)
-      const dayKey = date.getDate()
-      dailyTotals[dayKey] = (dailyTotals[dayKey] || 0) + item.amount
+      try {
+        const date = new Date(item.date)
+        if (!isNaN(date.getTime())) {
+          const dayKey = date.getDate().toString()
+          const amount = typeof item.amount === 'number' ? item.amount : parseFloat(item.amount || '0')
+          if (!isNaN(amount)) {
+            dailyTotals[dayKey] = (dailyTotals[dayKey] || 0) + amount
+          }
+        }
+      } catch (error) {
+        console.warn('Error processing item for line chart:', item, error)
+      }
     })
 
     // Create array of all days in the month
@@ -111,7 +136,7 @@ export function Chart({
     for (let day = 1; day <= daysInMonth; day++) {
       lineData.push({
         day: day,
-        amount: dailyTotals[day] || 0,
+        amount: dailyTotals[day.toString()] || 0,
         date: day
       })
     }

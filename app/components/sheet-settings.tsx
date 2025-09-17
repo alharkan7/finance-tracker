@@ -1,54 +1,25 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { signIn } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { AlertCircle, Plus, Share, Copy, LogIn, Check, ExternalLink, CheckCircle, Pencil, Save, X, Smile, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCircle, Save, X, Smile, Check, Pencil } from 'lucide-react'
 import { Category } from '@/schema/schema'
 import { toast } from "sonner"
 
-interface SheetError {
-  message: string;
-  errorType: string;
-  error: string;
-  serviceAccount?: string;
-  sheetUrl?: string;
-}
-
 interface SettingsProps {
-  error: SheetError | null;
-  userSheetId: string | null;
-  hasUserSheet: boolean;
   userEmail: string;
   expenseCategories: Category[];
   incomeCategories: Category[];
-  onCreateSheet: () => Promise<void>;
-  onSetupExistingSheet: () => Promise<void>;
-  onRetryFetch: () => Promise<void>;
-  onClearError: () => void;
-  onSheetIdUpdate?: () => void;
   loading: boolean;
 }
 
-export function SheetSettings({
-  error,
-  userSheetId,
-  hasUserSheet,
+export function Settings({
   userEmail,
   expenseCategories,
   incomeCategories,
-  onCreateSheet,
-  onSetupExistingSheet,
-  onRetryFetch,
-  onClearError,
-  onSheetIdUpdate,
   loading
 }: SettingsProps) {
-  const [copiedEmail, setCopiedEmail] = useState(false)
-  const [sheetId, setSheetId] = useState(userSheetId || '')
-  const [editingSheetId, setEditingSheetId] = useState(false)
   const [editingExpenseCategories, setEditingExpenseCategories] = useState<Category[]>(expenseCategories)
   const [editingIncomeCategories, setEditingIncomeCategories] = useState<Category[]>(incomeCategories)
   const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null)
@@ -56,58 +27,13 @@ export function SheetSettings({
   const [editingEmojiIndex, setEditingEmojiIndex] = useState<number | null>(null)
   const [editingEmojiType, setEditingEmojiType] = useState<'expense' | 'income' | null>(null)
   const [saving, setSaving] = useState(false)
-  const [permissionStepsExpanded, setPermissionStepsExpanded] = useState(false)
 
   // Update state when props change
   useEffect(() => {
-    setSheetId(userSheetId || '')
     setEditingExpenseCategories(expenseCategories)
     setEditingIncomeCategories(incomeCategories)
-  }, [userSheetId, expenseCategories, incomeCategories])
+  }, [expenseCategories, incomeCategories])
 
-  // Parse Google Sheets ID from URL
-  const parseSheetId = (input: string): string => {
-    // Extract sheet ID from Google Sheets URL
-    const urlMatch = input.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
-    if (urlMatch) {
-      return urlMatch[1]
-    }
-    // If it's already just an ID, return as is
-    return input.trim()
-  }
-
-  // Handle sheet ID update
-  const handleSheetIdUpdate = async () => {
-    if (!sheetId.trim()) return
-
-    setSaving(true)
-    try {
-      const parsedId = parseSheetId(sheetId)
-      setSheetId(parsedId)
-      setEditingSheetId(false)
-
-      // Update sheet ID via API
-      const response = await fetch('/api/user-sheet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sheetId: parsedId })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update sheet ID')
-      }
-
-      // Trigger data refresh in parent component
-      if (onSheetIdUpdate) {
-        onSheetIdUpdate()
-        toast.success('Sheet ID updated successfully! Refreshing data...')
-      }
-    } catch (error) {
-      console.error('Error updating sheet ID:', error)
-    } finally {
-      setSaving(false)
-    }
-  }
 
   // Handle category editing
   const startEditingCategory = (type: 'expense' | 'income', index: number) => {
@@ -209,29 +135,6 @@ export function SheetSettings({
     }
   }
 
-  // Copy service account email to clipboard
-  const copyServiceAccountEmail = async (email: string) => {
-    try {
-      await navigator.clipboard.writeText(email)
-      setCopiedEmail(true)
-      setTimeout(() => setCopiedEmail(false), 2000)
-    } catch (err) {
-      console.error('Failed to copy email:', err)
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea')
-      textArea.value = email
-      document.body.appendChild(textArea)
-      textArea.select()
-      try {
-        document.execCommand('copy')
-        setCopiedEmail(true)
-        setTimeout(() => setCopiedEmail(false), 2000)
-      } catch (fallbackErr) {
-        console.error('Fallback copy failed:', fallbackErr)
-      }
-      document.body.removeChild(textArea)
-    }
-  }
 
   // Main settings UI with scrollable content
   return (
@@ -239,145 +142,24 @@ export function SheetSettings({
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto px-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <div className="space-y-6">
-          {/* Google Sheets Section */}
+          {/* Database Info Section */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Google Sheets</h3>
-
-            {/* Setup Google Sheets Steps */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <button
-                onClick={() => setPermissionStepsExpanded(!permissionStepsExpanded)}
-                className="flex items-center justify-between w-full text-left"
-              >
-                <h4 className="text-sm font-semibold text-blue-900">Setup Google Sheets</h4>
-                {permissionStepsExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-blue-600" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-blue-600" />
-                )}
-              </button>
-              {permissionStepsExpanded && (
-                <div className="space-y-3 mt-3">
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
-                    <div className="flex-1">
-                      <p className="text-sm text-blue-800 mb-2">Copy this service account email:</p>
-                      <div className="flex items-center gap-2 p-2 bg-white border border-blue-300 rounded transition-colors duration-200"
-                           style={{ backgroundColor: copiedEmail ? '#dcfce7' : '#ffffff' }}>
-                        <code className="text-xs text-gray-700 flex-1">expense-tracker@hobby-project-435405.iam.gserviceaccount.com</code>
-                        <Button
-                          size="sm"
-                          variant="neutral"
-                          onClick={() => copyServiceAccountEmail('expense-tracker@hobby-project-435405.iam.gserviceaccount.com')}
-                          className="flex items-center justify-center w-8 h-8 p-0"
-                        >
-                          {copiedEmail ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
-                    <div className="flex-1">
-                      <p className="text-sm text-blue-800 mb-2">Make a copy of this template:</p>
-                      <div className="flex items-center gap-2 p-2 bg-white border border-blue-300 rounded hover:bg-green-100">
-                        <a
-                          href="https://docs.google.com/spreadsheets/d/1Hos52HFTnMLOiCsjG9F4U6uIsgSEDc2LhEvaUHT0UmI/edit?usp=sharing"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-bold text-xs text-blue-600 hover:text-blue-800 hover:underline flex-1 truncate"
-                        >
-                          Open Template Sheet
-                        </a>
-                        <ExternalLink className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                      </div>
-                      <ul className="text-xs text-blue-700 mt-2 ml-4 list-disc">
-                        <li>Click "File" → "Make a copy"</li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
-                    <div className="flex-1">
-                      <p className="text-sm text-blue-800">Add the email from Step 1 as <strong>Editor</strong> on your newly created sheet:</p>
-                      <ul className="text-xs text-blue-700 mt-1 ml-4 list-disc">
-                        <li>Click "Share" → Paste Email</li>
-                        <li>Set as Editor → "Send"</li>
-                      </ul>
-                    </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Database Storage</h3>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-semibold text-green-800">PostgreSQL Database Connected</h4>
+                  <p className="text-sm text-green-700 mt-1">
+                    Your expense data is automatically saved to a secure PostgreSQL database. No manual setup required!
+                  </p>
+                  <div className="mt-2 text-xs text-green-600">
+                    <p>✓ Real-time data synchronization</p>
+                    <p>✓ Secure cloud storage</p>
+                    <p>✓ Automatic backups</p>
                   </div>
                 </div>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              {/* Current Sheet ID */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Your Google Sheet</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  {editingSheetId ? (
-                    <>
-                      <Input
-                        value={sheetId}
-                        onChange={(e) => setSheetId(e.target.value)}
-                        placeholder="Enter sheet ID or URL"
-                        className="flex-1 rounded-lg"
-                      />
-                      <Button
-                        size="sm"
-                        variant="neutral"
-                        onClick={handleSheetIdUpdate}
-                        disabled={saving}
-                      >
-                        <Check className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="neutral"
-                        onClick={() => setEditingSheetId(false)}
-                        disabled={saving}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Input
-                        value={sheetId || 'No sheet configured'}
-                        readOnly
-                        className="flex-1 bg-gray-50 rounded-lg"
-                      />
-                      <Button
-                        size="sm"
-                        variant="neutral"
-                        onClick={() => setEditingSheetId(true)}
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Paste Google Sheets ID or URL
-                </p>
               </div>
-
-              {/* Sheet Actions */}
-              <div className="flex gap-2 flex-wrap">
-                {userSheetId && (
-                  <Button
-                    onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${userSheetId}`, '_blank')}
-                    variant="neutral"
-                    size="sm"
-                    disabled={loading || saving}
-                    className="flex items-center gap-2"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Open Sheet
-                  </Button>
-                )}
-              </div>
-
             </div>
           </div>
 
@@ -529,53 +311,6 @@ export function SheetSettings({
             </div>
           </div>
 
-          {/* Error Section */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <h3 className="font-medium text-red-800 mb-2">{error.message}</h3>
-                  <p className="text-sm text-red-600 mb-3">{error.error}</p>
-
-                  {error.errorType === 'SHEET_NOT_CONFIGURED' && (
-                    <div className="space-y-3">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <p className="text-sm text-blue-700">
-                          ✨ <strong>Quick Setup:</strong> We'll automatically create your sheet and grant the necessary permissions!
-                        </p>
-                        <p className="text-xs text-blue-600 mt-1">
-                          Note: If you signed in before, you may need to refresh permissions for automatic setup.
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Button onClick={onCreateSheet} className="w-full" size="sm" disabled={loading}>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create New Sheet
-                        </Button>
-                        <Button onClick={onSetupExistingSheet} variant="neutral" className="w-full" size="sm" disabled={loading}>
-                          <Share className="w-4 h-4 mr-2" />
-                          Use Existing Sheet
-                        </Button>
-                        <Button
-                          onClick={() => signIn('google')}
-                          variant="neutral"
-                          className="w-full"
-                          size="sm"
-                          disabled={loading}
-                        >
-                          <LogIn className="w-4 h-4 mr-2" />
-                          Refresh Permissions
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Other error types remain the same */}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

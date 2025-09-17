@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useSession, signIn } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
-import { Bell, Wallet, Settings, Zap, LogIn, Loader2, AlertTriangle } from 'lucide-react'
+import { Bell, Wallet, Settings as SettingsIcon, Zap, LogIn, Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
 import { ExpenseForm } from './components/expense-form'
-import { SheetSettings } from './components/sheet-settings'
+import { Settings } from './components/sheet-settings'
 import { BudgetDrawer } from './components/budget-drawer'
 import {
   Drawer,
@@ -27,32 +27,39 @@ import {
 } from "@/components/ui/dialog"
 import { Category } from '@/schema/schema'
 
-// Types for our data
+// Types for our data (updated for PostgreSQL database structure)
 interface ExpenseData {
-  timestamp: string;
-  subject: string;
+  id?: number;
+  user_id?: number;
+  timestamp?: string;
   date: string;
   amount: number;
   category: string;
-  description: string;
-  reimbursed: string;
+  description?: string;
+  source?: string;
+  external_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface IncomeData {
-  timestamp: string;
-  subject: string;
+  id?: number;
+  user_id?: number;
+  timestamp?: string;
   date: string;
   amount: number;
   category: string;
-  description: string;
+  description?: string;
+  source?: string;
+  external_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-interface SheetError {
+interface AppError {
   message: string;
   errorType: string;
   error: string;
-  serviceAccount?: string;
-  sheetUrl?: string;
 }
 
 // Mock data for the donut chart (will be replaced with real data)
@@ -63,14 +70,16 @@ const mockChartData = [
   { name: 'Others', value: 100, color: '#FF8042' },
 ]
 
-// Cache configuration
-const CACHE_KEY_EXPENSES = 'expense_tracker_expenses'
-const CACHE_KEY_INCOMES = 'expense_tracker_incomes'
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
+// Cache configuration for PostgreSQL data
+const CACHE_KEY_EXPENSES = 'expense_tracker_expenses_pg'
+const CACHE_KEY_INCOMES = 'expense_tracker_incomes_pg'
+const CACHE_KEY_BUDGETS = 'expense_tracker_budgets_pg'
+const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes in milliseconds (reduced for fresher data)
 
 interface CacheData {
   data: any[]
   timestamp: number
+  version?: string // Add version to invalidate old cache
 }
 
 // Cache utilities
@@ -89,7 +98,8 @@ const setCache = (key: string, data: any[]) => {
   try {
     const cacheData: CacheData = {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      version: 'postgresql' // Mark as PostgreSQL data
     }
     localStorage.setItem(key, JSON.stringify(cacheData))
   } catch {
@@ -99,7 +109,19 @@ const setCache = (key: string, data: any[]) => {
 
 const isCacheValid = (cache: CacheData | null): boolean => {
   if (!cache) return false
-  return (Date.now() - cache.timestamp) < CACHE_DURATION
+  
+  // Invalidate cache if it's not PostgreSQL version
+  if (cache.version !== 'postgresql') {
+    return false
+  }
+  
+  const age = Date.now() - cache.timestamp
+  const isValid = age < CACHE_DURATION
+  
+  // Debug cache status
+  console.log(`Cache age: ${Math.round(age / 1000)}s, Valid: ${isValid}, Duration: ${CACHE_DURATION / 1000}s`)
+  
+  return isValid
 }
 
 const clearCache = () => {
@@ -107,6 +129,7 @@ const clearCache = () => {
   try {
     localStorage.removeItem(CACHE_KEY_EXPENSES)
     localStorage.removeItem(CACHE_KEY_INCOMES)
+    localStorage.removeItem(CACHE_KEY_BUDGETS)
   } catch {
     // Ignore cache clear errors
   }
@@ -120,12 +143,10 @@ export default function MobileFinanceTracker() {
   const [incomes, setIncomes] = useState<IncomeData[]>([])
   const [loading, setLoading] = useState(true)
   const [formLoading, setFormLoading] = useState(false)
-  const [error, setError] = useState<SheetError | null>(null)
+  const [error, setError] = useState<AppError | null>(null)
   const [chartData, setChartData] = useState(mockChartData)
   const [chartMode, setChartMode] = useState<'income' | 'expense'>('expense')
   const [chartType, setChartType] = useState<'donut' | 'line'>('donut')
-  const [userSheetId, setUserSheetId] = useState<string | null>(null)
-  const [hasUserSheet, setHasUserSheet] = useState<boolean>(false)
 
   // Categories state
   const [expenseCategories, setExpenseCategories] = useState<Category[]>([])
@@ -152,21 +173,35 @@ export default function MobileFinanceTracker() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   
-  // Filter data by selected month
+  // Filter data by selected month with better error handling
   const filterDataByMonth = (data: any[]) => {
     return data.filter(item => {
-      if (!item.date) return false
-      const itemDate = new Date(item.date)
-      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+      if (!item || !item.date) return false
+      try {
+        const itemDate = new Date(item.date)
+        if (isNaN(itemDate.getTime())) return false
+        return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+      } catch (error) {
+        console.warn('Invalid date format in filterDataByMonth:', item)
+        return false
+      }
     })
   }
 
   const filteredExpenses = filterDataByMonth(expenses)
   const filteredIncomes = filterDataByMonth(incomes)
 
-  // Calculate balance from filtered data: Budget - Expenses
-  const totalIncome = filteredIncomes.reduce((sum, income) => sum + income.amount, 0)
-  const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0)
+  // Calculate balance from filtered data: Budget - Expenses with better error handling
+  const totalIncome = filteredIncomes.reduce((sum, income) => {
+    const amount = typeof income.amount === 'number' ? income.amount : parseFloat(income.amount || '0')
+    return sum + (isNaN(amount) ? 0 : amount)
+  }, 0)
+  
+  const totalExpenses = filteredExpenses.reduce((sum, expense) => {
+    const amount = typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount || '0')
+    return sum + (isNaN(amount) ? 0 : amount)
+  }, 0)
+  
   const balance = monthlyBudget - totalExpenses
 
   // Month navigation functions
@@ -297,27 +332,6 @@ export default function MobileFinanceTracker() {
     }
   }
 
-  // Check user sheet configuration
-  const checkUserSheet = async () => {
-    try {
-      const response = await fetch('/api/user-sheet')
-
-      if (response.ok) {
-        const data = await response.json()
-        setHasUserSheet(data.hasSheet)
-        if (data.hasSheet) {
-          setUserSheetId(data.sheetId)
-        }
-      } else {
-        setHasUserSheet(false)
-        setUserSheetId(null)
-      }
-    } catch (error) {
-      console.error('Error checking user sheet:', error)
-      setHasUserSheet(false)
-      setUserSheetId(null)
-    }
-  }
 
   // Fetch user categories
   const fetchUserCategories = async () => {
@@ -346,7 +360,7 @@ export default function MobileFinanceTracker() {
     }
   }
 
-  // Fetch data from Google Sheets with caching
+  // Fetch data from PostgreSQL database with caching
   const fetchData = async (forceRefresh = false) => {
     if (!session) {
       setLoading(false)
@@ -358,19 +372,32 @@ export default function MobileFinanceTracker() {
       if (!forceRefresh) {
         const expensesCache = getCache(CACHE_KEY_EXPENSES)
         const incomesCache = getCache(CACHE_KEY_INCOMES)
+        const budgetsCache = getCache(CACHE_KEY_BUDGETS)
 
-        if (isCacheValid(expensesCache) && isCacheValid(incomesCache)) {
-          console.log('Using cached data')
+        if (isCacheValid(expensesCache) && isCacheValid(incomesCache) && isCacheValid(budgetsCache)) {
+          console.log('Using cached PostgreSQL data')
           const cachedExpenses = expensesCache!.data
           const cachedIncomes = incomesCache!.data
+          const cachedBudgets = budgetsCache!.data
           setExpenses(cachedExpenses)
           setIncomes(cachedIncomes)
-          // Set chart data directly from cache (with filtering)
+          
+          // Process cached budget data
+          if (cachedBudgets && cachedBudgets.length > 0) {
+            processBudgetData(cachedBudgets)
+          }
+          // Set chart data directly from cache (with filtering) with better error handling
           const filterDataByMonthLocal = (data: any[]) => {
             return data.filter(item => {
-              if (!item.date) return false
-              const itemDate = new Date(item.date)
-              return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+              if (!item || !item.date) return false
+              try {
+                const itemDate = new Date(item.date)
+                if (isNaN(itemDate.getTime())) return false
+                return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+              } catch (error) {
+                console.warn('Invalid date format in cached data processing:', item)
+                return false
+              }
             })
           }
 
@@ -379,8 +406,11 @@ export default function MobileFinanceTracker() {
           const dataToUse = chartMode === 'expense' ? filteredExpensesLocal : filteredIncomesLocal
           const categoryTotals: { [key: string]: number } = {}
           dataToUse.forEach(item => {
-            if (item.category && item.amount) {
-              categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount
+            if (item && item.category) {
+              const amount = typeof item.amount === 'number' ? item.amount : parseFloat(item.amount || '0')
+              if (!isNaN(amount)) {
+                categoryTotals[item.category] = (categoryTotals[item.category] || 0) + amount
+              }
             }
           })
           const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
@@ -420,9 +450,10 @@ export default function MobileFinanceTracker() {
       const incomes = data.incomes || []
       const budgets = data.budgets || []
 
-      // Cache the data
+      // Cache the data including budgets
       setCache(CACHE_KEY_EXPENSES, expenses)
       setCache(CACHE_KEY_INCOMES, incomes)
+      setCache(CACHE_KEY_BUDGETS, budgets)
 
       setExpenses(expenses)
       setIncomes(incomes)
@@ -432,12 +463,18 @@ export default function MobileFinanceTracker() {
         processBudgetData(budgets)
       }
 
-      // Update chart data based on current mode (using filtered data)
+      // Update chart data based on current mode (using filtered data) with better error handling
       const filterDataByMonthLocal = (data: any[]) => {
         return data.filter(item => {
-          if (!item.date) return false
-          const itemDate = new Date(item.date)
-          return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+          if (!item || !item.date) return false
+          try {
+            const itemDate = new Date(item.date)
+            if (isNaN(itemDate.getTime())) return false
+            return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+          } catch (error) {
+            console.warn('Invalid date format in fresh data processing:', item)
+            return false
+          }
         })
       }
 
@@ -446,8 +483,11 @@ export default function MobileFinanceTracker() {
       const dataToUse = chartMode === 'expense' ? filteredExpensesLocal : filteredIncomesLocal
       const categoryTotals: { [key: string]: number } = {}
       dataToUse.forEach((item: any) => {
-        if (item.category && item.amount) {
-          categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount
+        if (item && item.category) {
+          const amount = typeof item.amount === 'number' ? item.amount : parseFloat(item.amount || '0')
+          if (!isNaN(amount)) {
+            categoryTotals[item.category] = (categoryTotals[item.category] || 0) + amount
+          }
         }
       })
       const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
@@ -476,113 +516,18 @@ export default function MobileFinanceTracker() {
     setChartType(type)
   }
 
-  // Handle sheet creation
-  const handleCreateSheet = async () => {
-    try {
-      setLoading(true)
-      console.log('Creating sheet for user:', session?.user?.email)
-      console.log('Session has accessToken:', !!session?.accessToken)
-      
-      const response = await fetch('/api/setup-sheet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create' })
-      })
-
-      const result = await response.json()
-      console.log('Setup sheet response:', result)
-      
-      if (response.ok) {
-        // Update user sheet status
-        setHasUserSheet(true)
-        setUserSheetId(result.sheetId)
-        
-        if (result.needsManualSharing) {
-          // Sheet created but needs manual sharing
-          setError({
-            message: 'Sheet created - Manual sharing needed',
-            errorType: 'SHEET_CREATED_NEEDS_SHARING',
-            error: `Your sheet was created successfully, but you need to manually share it with the service account to start using it.`,
-            serviceAccount: result.serviceAccount,
-            sheetUrl: result.spreadsheetUrl
-          })
-        } else {
-          // Everything worked perfectly
-          clearCache() // Clear old cache since we have new sheet
-          setError(null)
-          toast.success("🎉 Sheet created and configured successfully! Your personal expense tracker is ready.")
-          // Refresh data after successful creation
-          await fetchData(true)
-        }
-      } else {
-        throw result
-      }
-    } catch (err: any) {
-      console.error('Error creating sheet:', err)
-      toast.error(`Error creating sheet: ${err.error || err.message}`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Handle existing sheet setup
-  const handleSetupExistingSheet = async () => {
-    const sheetId = prompt('Please enter your Google Sheets ID:')
-    if (!sheetId) return
-
-    try {
-      setLoading(true)
-      const response = await fetch('/api/setup-sheet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'setup-existing', sheetId })
-      })
-
-      const result = await response.json()
-      
-      if (response.ok) {
-        // Update user sheet status
-        clearCache() // Clear old cache since we have new sheet
-        setHasUserSheet(true)
-        setUserSheetId(sheetId)
-        setError(null)
-
-        toast.success("🎉 Sheet setup successfully! Permissions automatically granted. Your personal expense tracker is ready.")
-        // Refresh data after successful setup
-        await fetchData(true)
-      } else {
-        throw result
-      }
-    } catch (err: any) {
-      console.error('Error setting up sheet:', err)
-      toast.error(`Error setting up sheet: ${err.error || err.message}`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   // Clear error state
   const handleClearError = () => {
-    if (error?.errorType === 'SHEET_MANAGEMENT') {
-      setError(null)
-    } else {
-      setError({
-        message: 'Sheet Management',
-        errorType: 'SHEET_MANAGEMENT',
-        error: 'Manage your Google Sheet connection'
-      })
-    }
+    setError(null)
   }
 
   // Initialize user data when authenticated
   useEffect(() => {
     if (status === 'authenticated') {
-      // Fetch user categories and check sheet configuration
+      // Fetch user categories and data
       fetchUserCategories().then(() => {
-        checkUserSheet().then(() => {
-          // Only fetch data if we have a sheet configured
-          fetchData()
-        })
+        // Load data (will use cache if valid, otherwise fetch fresh)
+        fetchData()
       })
     } else if (status === 'unauthenticated') {
       setLoading(false)
@@ -590,12 +535,12 @@ export default function MobileFinanceTracker() {
     }
   }, [session, status])
 
-  // Fetch all budgets when user is authenticated and has sheet
+  // Fetch all budgets when user is authenticated
   useEffect(() => {
-    if (hasUserSheet && !loading && !budgetsLoaded) {
+    if (status === 'authenticated' && !loading && !budgetsLoaded) {
       fetchAllBudgets()
     }
-  }, [hasUserSheet, loading, budgetsLoaded])
+  }, [status, loading, budgetsLoaded])
 
   // Update current month's budget when month changes (from cache)
   useEffect(() => {
@@ -605,15 +550,21 @@ export default function MobileFinanceTracker() {
     }
   }, [currentMonth, currentYear, budgetsLoaded, allBudgets])
 
-  // Update chart data when mode or month changes
+  // Update chart data when mode or month changes with better error handling
   useEffect(() => {
     if (expenses.length > 0 || incomes.length > 0) {
-      // Filter data by selected month
+      // Filter data by selected month with better error handling
       const filterDataByMonthLocal = (data: any[]) => {
         return data.filter(item => {
-          if (!item.date) return false
-          const itemDate = new Date(item.date)
-          return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+          if (!item || !item.date) return false
+          try {
+            const itemDate = new Date(item.date)
+            if (isNaN(itemDate.getTime())) return false
+            return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+          } catch (error) {
+            console.warn('Invalid date format in chart processing:', item)
+            return false
+          }
         })
       }
 
@@ -622,11 +573,16 @@ export default function MobileFinanceTracker() {
 
       const dataToUse = chartMode === 'expense' ? filteredExpensesLocal : filteredIncomesLocal
       const categoryTotals: { [key: string]: number } = {}
+      
       dataToUse.forEach((item: any) => {
-        if (item.category && item.amount) {
-          categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount
+        if (item && item.category) {
+          const amount = typeof item.amount === 'number' ? item.amount : parseFloat(item.amount || '0')
+          if (!isNaN(amount)) {
+            categoryTotals[item.category] = (categoryTotals[item.category] || 0) + amount
+          }
         }
       })
+      
       const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
       const newChartData = Object.entries(categoryTotals).map(([name, value], index) => ({
         name,
@@ -637,12 +593,6 @@ export default function MobileFinanceTracker() {
     }
   }, [chartMode, expenses, incomes, currentMonth, currentYear])
 
-  // Automatically open sheet settings if no sheet is configured
-  useEffect(() => {
-    if (status === 'authenticated' && !hasUserSheet && !loading) {
-      setIsDrawerOpen(true)
-    }
-  }, [hasUserSheet, status, loading])
 
   // Handle form submission
   const handleFormSubmit = async (formData: {
@@ -683,7 +633,7 @@ export default function MobileFinanceTracker() {
       })
 
       if (response.ok) {
-        // Clear cache and refresh only chart data to get latest state
+        // Clear cache and refresh chart data to get latest state
         clearCache()
 
         // Refresh data to update chart
@@ -697,12 +647,18 @@ export default function MobileFinanceTracker() {
             const newBudgets = data.budgets || []
 
             // Update chart data only
-            // Update chart data after form submission (using filtered data)
+            // Update chart data after form submission (using filtered data) with better error handling
             const filterDataByMonthLocal = (data: any[]) => {
               return data.filter(item => {
-                if (!item.date) return false
-                const itemDate = new Date(item.date)
-                return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+                if (!item || !item.date) return false
+                try {
+                  const itemDate = new Date(item.date)
+                  if (isNaN(itemDate.getTime())) return false
+                  return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+                } catch (error) {
+                  console.warn('Invalid date format in form submission processing:', item)
+                  return false
+                }
               })
             }
 
@@ -711,8 +667,11 @@ export default function MobileFinanceTracker() {
             const dataToUse = chartMode === 'expense' ? filteredNewExpenses : filteredNewIncomes
             const categoryTotals: { [key: string]: number } = {}
             dataToUse.forEach((item: any) => {
-              if (item.category && item.amount) {
-                categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount
+              if (item && item.category) {
+                const amount = typeof item.amount === 'number' ? item.amount : parseFloat(item.amount || '0')
+                if (!isNaN(amount)) {
+                  categoryTotals[item.category] = (categoryTotals[item.category] || 0) + amount
+                }
               }
             })
             const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
@@ -803,7 +762,7 @@ export default function MobileFinanceTracker() {
 
             <div className="text-center text-xs text-gray-500 max-w-xs">
               <p>
-                Your Google account will be used to create and edit your personal Google Sheets for storing your data.
+                Your Google account will be used to securely access your personal expense tracker data stored in our PostgreSQL database.
               </p>
             </div>
           </div>
@@ -851,8 +810,7 @@ export default function MobileFinanceTracker() {
       <div className="flex-1 bg-white rounded-t-3xl p-4 w-full overflow-y-auto flex flex-col items-center">
 
         {/* Chart Section */}
-        {!error && (
-          <Chart
+        <Chart
             data={chartData}
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
@@ -874,10 +832,9 @@ export default function MobileFinanceTracker() {
             budgetsLoaded={budgetsLoaded}
             onOpenBudgetDrawer={() => setIsBudgetDrawerOpen(true)}
           />
-        )}
 
-        {/* Form Section - Only show when data is loaded and no error */}
-        {!loading && !error && (
+        {/* Form Section - Always show when data is loaded (PostgreSQL always available) */}
+        {!loading && (
           <ExpenseForm
             onSubmit={handleFormSubmit}
             loading={formLoading}
@@ -898,18 +855,14 @@ export default function MobileFinanceTracker() {
         </Button>
         <Drawer open={isDrawerOpen} onOpenChange={(open) => {
           setIsDrawerOpen(open)
-          // Clear SHEET_MANAGEMENT error when drawer closes
-          if (!open && error?.errorType === 'SHEET_MANAGEMENT') {
-            setError(null)
-          }
-          // Reset drawer key to remount SheetSettings component and clear management state
+          // Reset drawer key to remount Settings component
           if (!open) {
             setDrawerKey(prev => prev + 1)
           }
         }}>
           <DrawerTrigger asChild>
             <Button variant="neutral" className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent">
-              <Settings className="w-3 h-3 mr-1" />
+              <SettingsIcon className="w-3 h-3 mr-1" />
               Settings
             </Button>
           </DrawerTrigger>
@@ -918,19 +871,11 @@ export default function MobileFinanceTracker() {
               <DrawerTitle>Settings</DrawerTitle>
             </DrawerHeader>
             <div className="flex-1 overflow-hidden">
-              <SheetSettings
+              <Settings
                 key={drawerKey}
-                error={error}
-                userSheetId={userSheetId}
-                hasUserSheet={hasUserSheet}
-                userEmail={session?.user?.email || ''}
                 expenseCategories={expenseCategories}
                 incomeCategories={incomeCategories}
-                onCreateSheet={handleCreateSheet}
-                onSetupExistingSheet={handleSetupExistingSheet}
-                onRetryFetch={fetchData}
-                onClearError={handleClearError}
-                onSheetIdUpdate={() => fetchData(true)}
+                userEmail={session?.user?.email || ''}
                 loading={loading}
               />
             </div>
@@ -970,10 +915,8 @@ export default function MobileFinanceTracker() {
           onClose={() => {
             setIsBudgetDrawerOpen(false)
             // Refresh all budget data when drawer closes
-            if (hasUserSheet && !loading) {
-              setBudgetsLoaded(false)
-              fetchAllBudgets()
-            }
+            setBudgetsLoaded(false)
+            fetchAllBudgets()
           }}
           currentMonth={currentMonth}
           currentYear={currentYear}

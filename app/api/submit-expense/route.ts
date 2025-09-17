@@ -1,8 +1,7 @@
-import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import GoogleProvider from "next-auth/providers/google";
-import { getUserSheet, getUserId } from '@/lib/user-sheets';
+import { DatabaseService } from '@/lib/database';
 
 const authOptions = {
   providers: [
@@ -46,72 +45,54 @@ export async function POST(req: Request) {
       }, { status: 401 });
     }
 
+    // Get user from database
+    const user = await DatabaseService.findUserByEmail(session.user.email!);
+    if (!user) {
+      return NextResponse.json({
+        message: 'User not found',
+        error: 'Your account could not be found in the database'
+      }, { status: 404 });
+    }
+
     const body = await req.json();
     const { timestamp, date, amount, category, notes } = body;
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        private_key: (process.env.GOOGLE_PRIVATE_KEY as string).replace(/\\n/g, '\n'), // Replace newline characters
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      }, scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    // Get user-specific sheet ID
-    const userId = getUserId(session);
-    const userSheet = await getUserSheet(userId);
-
-    if (!userSheet) {
+    // Validate required fields
+    if (!date || !amount || !category) {
       return NextResponse.json({
-        message: 'Sheet not configured',
-        errorType: 'SHEET_NOT_CONFIGURED',
-        error: 'No Google Sheet configured for your account. Please set up a sheet first.'
+        message: 'Missing required fields',
+        error: 'Date, amount, and category are required'
       }, { status: 400 });
     }
 
-    const sheetId = userSheet.sheetId;
-
-    // Check if the sheet has headers by reading the first row
-    const headerCheckResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: 'Expenses!A1:E1',
-    });
-
-    const hasHeaders = headerCheckResponse.data.values && headerCheckResponse.data.values.length > 0;
-
-    // If no headers exist, add them first
-    if (!hasHeaders) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: 'Expenses!A1:E1',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [['Timestamp', 'Date', 'Amount', 'Category', 'Notes']],
-        },
-      });
+    if (typeof amount !== 'number' || amount < 0) {
+      return NextResponse.json({
+        message: 'Invalid amount',
+        error: 'Amount must be a positive number'
+      }, { status: 400 });
     }
 
-    // Append the expense data
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: sheetId,
-      range: 'Expenses!A:E',
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: {
-        values: [[timestamp, date, amount, category, notes]],
-      },
+    // Create expense record in database
+    const expense = await DatabaseService.createExpense({
+      user_id: user.id,
+      timestamp: timestamp || null,
+      date,
+      amount,
+      category,
+      description: notes || null,
+      source: 'manual'
     });
 
-    return NextResponse.json({ message: 'Success' }, { status: 200 });
+    return NextResponse.json({ 
+      message: 'Expense created successfully',
+      expense
+    }, { status: 200 });
+
   } catch (error) {
-    console.error('Detailed error:', {
-      name: error instanceof Error ? error.name : 'Unknown Error',
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : 'No stack trace',
-    });
+    console.error('Error submitting expense:', error);
     return NextResponse.json({
-      message: 'Error submitting data',
+      message: 'Error submitting expense',
+      errorType: 'DATABASE_ERROR',
       error: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }

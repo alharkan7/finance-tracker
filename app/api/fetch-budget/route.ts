@@ -1,8 +1,7 @@
-import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import GoogleProvider from "next-auth/providers/google";
-import { getUserSheet } from '@/lib/user-sheets';
+import { DatabaseService } from '@/lib/database';
 
 const authOptions = {
   providers: [
@@ -46,85 +45,37 @@ export async function GET(req: Request) {
       }, { status: 401 });
     }
 
+    // Get user from database
+    const user = await DatabaseService.findUserByEmail(session.user.email!);
+    if (!user) {
+      return NextResponse.json({
+        message: 'User not found',
+        error: 'Your account could not be found in the database'
+      }, { status: 404 });
+    }
+
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    if (!startDate || !endDate) {
-      return NextResponse.json({
-        message: 'Missing parameters',
-        error: 'startDate and endDate are required'
-      }, { status: 400 });
-    }
-
-    // Get user's sheet ID
-    const userId = session.user.email!;
-    const userSheet = await getUserSheet(userId);
-
-    if (!userSheet) {
-      return NextResponse.json({
-        message: 'No sheet configured',
-        error: 'Please configure your Google Sheet first'
-      }, { status: 400 });
-    }
-
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        private_key: (process.env.GOOGLE_PRIVATE_KEY as string).replace(/\\n/g, '\n'),
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    // Fetch budget data from the Budget sheet
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: userSheet.sheetId,
-      range: 'Budget!A:D',
-    });
-
-    const rows = response.data.values || [];
-
-    if (rows.length <= 1) {
-      // Only headers or empty sheet
-      return NextResponse.json({
-        budgets: [],
-        message: 'No budget data found'
-      });
-    }
-
-    // Parse budget data (skip header row)
-    const budgets = rows.slice(1).map((row, index) => ({
-      timestamp: row[0] || '',
-      date: row[1] || '',
-      amount: parseFloat(row[2] || '0'),
-      notes: row[3] || ''
-    })).filter(budget => {
-      // Filter by date range if provided
-      if (budget.date >= startDate && budget.date <= endDate) {
-        return true;
-      }
-      return false;
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Fetch budgets from database
+    const budgets = await DatabaseService.getBudgets(
+      user.id,
+      startDate || undefined,
+      endDate || undefined
+    );
 
     return NextResponse.json({
       budgets,
-      message: 'Budget data fetched successfully'
+      message: budgets.length > 0 ? 'Budget data fetched successfully' : 'No budget data found'
     });
 
   } catch (error: any) {
     console.error('Error fetching budget data:', error);
 
-    if (error.code === 403) {
-      return NextResponse.json({
-        message: 'Access denied',
-        error: 'No permission to access the Google Sheet'
-      }, { status: 403 });
-    }
-
     return NextResponse.json({
       message: 'Error fetching budget data',
+      errorType: 'DATABASE_ERROR',
       error: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }

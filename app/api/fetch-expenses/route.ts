@@ -1,8 +1,7 @@
-import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import GoogleProvider from "next-auth/providers/google";
-import { getUserSheet, getUserId } from '@/lib/user-sheets';
+import { DatabaseService } from '@/lib/database';
 
 const authOptions = {
   providers: [
@@ -46,97 +45,37 @@ export async function GET(req: Request) {
       }, { status: 401 });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        private_key: (process.env.GOOGLE_PRIVATE_KEY as string).replace(/\\n/g, '\n'),
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    // Get user-specific sheet ID
-    const userId = getUserId(session);
-    const userSheet = await getUserSheet(userId);
-
-    if (!userSheet) {
+    // Get user from database
+    const user = await DatabaseService.findUserByEmail(session.user.email!);
+    if (!user) {
       return NextResponse.json({
-        message: 'Sheet not configured',
-        errorType: 'SHEET_NOT_CONFIGURED',
-        error: 'No Google Sheet configured for your account. Please set up a sheet first.'
-      }, { status: 400 });
+        message: 'User not found',
+        error: 'Your account could not be found in the database'
+      }, { status: 404 });
     }
 
-    const sheetId = userSheet.sheetId;
+    // Parse query parameters for date filtering
+    const { searchParams } = new URL(req.url);
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
-    // First, check if the spreadsheet exists and is accessible
-    try {
-      await sheets.spreadsheets.get({
-        spreadsheetId: sheetId,
-      });
-    } catch (accessError: any) {
-      if (accessError.code === 404) {
-        return NextResponse.json({
-          message: 'Sheet not found',
-          errorType: 'SHEET_NOT_FOUND',
-          error: 'The specified Google Sheet does not exist or has been deleted'
-        }, { status: 404 });
-      } else if (accessError.code === 403) {
-        return NextResponse.json({
-          message: 'Access denied',
-          errorType: 'ACCESS_DENIED',
-          error: 'No permission to access this Google Sheet. Please grant access to the service account.',
-          serviceAccount: process.env.GOOGLE_CLIENT_EMAIL,
-        }, { status: 403 });
-      }
-      throw accessError;
-    }
+    // Fetch expenses from database
+    const expenses = await DatabaseService.getExpenses(
+      user.id,
+      startDate || undefined,
+      endDate || undefined
+    );
 
-    const range = 'Expenses!A:E'; // Fetch all columns
+    return NextResponse.json({ 
+      expenses,
+      message: expenses.length > 0 ? 'Expenses fetched successfully' : 'No expense data found'
+    }, { status: 200 });
 
-    let response;
-    try {
-      response = await sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range,
-      });
-    } catch (sheetError: any) {
-      if (sheetError.message?.includes('Unable to parse range')) {
-        return NextResponse.json({
-          message: 'Sheet tab not found',
-          errorType: 'SHEET_TAB_NOT_FOUND',
-          error: 'The "Expenses" tab does not exist in the spreadsheet. Please create it or check the sheet structure.'
-        }, { status: 400 });
-      }
-      throw sheetError;
-    }
-
-    const rows = response.data.values || [];
-
-    // If no data or only header row
-    if (rows.length <= 1) {
-      return NextResponse.json({ 
-        expenses: [],
-        message: 'No expense data found'
-      }, { status: 200 });
-    }
-
-    // Skip header row and map data
-    const expenses = rows.slice(1).map((row: any[]) => ({
-      timestamp: row[0] || '', // Column A: Timestamp
-      date: row[1] || '',       // Column B: Date
-      amount: parseFloat(row[2]) || 0, // Column C: Amount
-      category: row[3] || '',   // Column D: Category
-      description: row[4] || '', // Column E: Notes (mapped to description for consistency)
-    }));
-
-    return NextResponse.json({ expenses }, { status: 200 });
   } catch (error) {
     console.error('Error fetching expenses:', error);
     return NextResponse.json({
       message: 'Error fetching expenses',
-      errorType: 'UNKNOWN_ERROR',
+      errorType: 'DATABASE_ERROR',
       error: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }

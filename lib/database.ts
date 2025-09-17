@@ -11,6 +11,52 @@ import {
   DEFAULT_INCOME_CATEGORIES
 } from '../schema/schema'
 
+// Interfaces for the new finance data tables
+export interface ExpenseRecord {
+  id?: number;
+  user_id: number;
+  timestamp?: string;
+  date: string;
+  amount: number;
+  category: string;
+  description?: string;
+  source?: string;
+  external_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface IncomeRecord {
+  id?: number;
+  user_id: number;
+  timestamp?: string;
+  date: string;
+  amount: number;
+  category: string;
+  description?: string;
+  source?: string;
+  external_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BudgetRecord {
+  id?: number;
+  user_id: number;
+  timestamp?: string;
+  date: string;
+  amount: number;
+  notes?: string;
+  budget_type?: string;
+  period_start?: string;
+  period_end?: string;
+  source?: string;
+  external_id?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export class DatabaseService {
   /**
    * Find user by email
@@ -393,6 +439,410 @@ export class DatabaseService {
       return result.rows[0] as FinanceTrackerUser
     } catch (error) {
       console.error('Error deactivating user:', error)
+      throw error
+    }
+  }
+
+  // =============================================================================
+  // EXPENSE OPERATIONS
+  // =============================================================================
+
+  /**
+   * Create a new expense record
+   */
+  static async createExpense(expense: Omit<ExpenseRecord, 'id' | 'created_at' | 'updated_at'>): Promise<ExpenseRecord> {
+    try {
+      const result = await db.query(
+        `INSERT INTO expenses 
+         (user_id, timestamp, date, amount, category, description, source, external_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          expense.user_id,
+          expense.timestamp || null,
+          expense.date,
+          expense.amount,
+          expense.category,
+          expense.description || null,
+          expense.source || 'manual',
+          expense.external_id || null
+        ]
+      )
+
+      return result.rows[0] as ExpenseRecord
+    } catch (error) {
+      console.error('Error creating expense:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get expenses for a user with optional date filtering
+   */
+  static async getExpenses(
+    userId: number, 
+    startDate?: string, 
+    endDate?: string
+  ): Promise<ExpenseRecord[]> {
+    try {
+      let query = 'SELECT * FROM expenses WHERE user_id = $1'
+      const params: any[] = [userId]
+      let paramIndex = 2
+
+      if (startDate) {
+        query += ` AND date >= $${paramIndex}`
+        params.push(startDate)
+        paramIndex++
+      }
+
+      if (endDate) {
+        query += ` AND date <= $${paramIndex}`
+        params.push(endDate)
+        paramIndex++
+      }
+
+      query += ' ORDER BY date DESC, created_at DESC'
+
+      const result = await db.query(query, params)
+      return result.rows as ExpenseRecord[]
+    } catch (error) {
+      console.error('Error fetching expenses:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update an expense record (with user ownership validation)
+   */
+  static async updateExpense(id: number, userId: number, updates: Partial<ExpenseRecord>): Promise<ExpenseRecord> {
+    try {
+      const updateFields = Object.keys(updates).filter(key => key !== 'id' && key !== 'created_at' && key !== 'updated_at' && key !== 'user_id')
+      const setClause = updateFields.map((field, index) => `${field} = $${index + 1}`).join(', ')
+      const values = updateFields.map(field => (updates as any)[field])
+      values.push(id, userId) // id and userId for WHERE clause
+
+      const result = await db.query(
+        `UPDATE expenses SET ${setClause}, updated_at = NOW() WHERE id = $${values.length - 1} AND user_id = $${values.length} RETURNING *`,
+        values
+      )
+
+      if (result.rows.length === 0) {
+        throw new Error(`Expense not found with id: ${id} for this user`)
+      }
+
+      return result.rows[0] as ExpenseRecord
+    } catch (error) {
+      console.error('Error updating expense:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete an expense record (with user ownership validation)
+   */
+  static async deleteExpense(id: number, userId: number): Promise<void> {
+    try {
+      const result = await db.query('DELETE FROM expenses WHERE id = $1 AND user_id = $2', [id, userId])
+      
+      if (result.rowCount === 0) {
+        throw new Error(`Expense not found with id: ${id} for this user`)
+      }
+    } catch (error) {
+      console.error('Error deleting expense:', error)
+      throw error
+    }
+  }
+
+  // =============================================================================
+  // INCOME OPERATIONS
+  // =============================================================================
+
+  /**
+   * Create a new income record
+   */
+  static async createIncome(income: Omit<IncomeRecord, 'id' | 'created_at' | 'updated_at'>): Promise<IncomeRecord> {
+    try {
+      const result = await db.query(
+        `INSERT INTO incomes 
+         (user_id, timestamp, date, amount, category, description, source, external_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          income.user_id,
+          income.timestamp || null,
+          income.date,
+          income.amount,
+          income.category,
+          income.description || null,
+          income.source || 'manual',
+          income.external_id || null
+        ]
+      )
+
+      return result.rows[0] as IncomeRecord
+    } catch (error) {
+      console.error('Error creating income:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get incomes for a user with optional date filtering
+   */
+  static async getIncomes(
+    userId: number, 
+    startDate?: string, 
+    endDate?: string
+  ): Promise<IncomeRecord[]> {
+    try {
+      let query = 'SELECT * FROM incomes WHERE user_id = $1'
+      const params: any[] = [userId]
+      let paramIndex = 2
+
+      if (startDate) {
+        query += ` AND date >= $${paramIndex}`
+        params.push(startDate)
+        paramIndex++
+      }
+
+      if (endDate) {
+        query += ` AND date <= $${paramIndex}`
+        params.push(endDate)
+        paramIndex++
+      }
+
+      query += ' ORDER BY date DESC, created_at DESC'
+
+      const result = await db.query(query, params)
+      return result.rows as IncomeRecord[]
+    } catch (error) {
+      console.error('Error fetching incomes:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update an income record (with user ownership validation)
+   */
+  static async updateIncome(id: number, userId: number, updates: Partial<IncomeRecord>): Promise<IncomeRecord> {
+    try {
+      const updateFields = Object.keys(updates).filter(key => key !== 'id' && key !== 'created_at' && key !== 'updated_at' && key !== 'user_id')
+      const setClause = updateFields.map((field, index) => `${field} = $${index + 1}`).join(', ')
+      const values = updateFields.map(field => (updates as any)[field])
+      values.push(id, userId) // id and userId for WHERE clause
+
+      const result = await db.query(
+        `UPDATE incomes SET ${setClause}, updated_at = NOW() WHERE id = $${values.length - 1} AND user_id = $${values.length} RETURNING *`,
+        values
+      )
+
+      if (result.rows.length === 0) {
+        throw new Error(`Income not found with id: ${id} for this user`)
+      }
+
+      return result.rows[0] as IncomeRecord
+    } catch (error) {
+      console.error('Error updating income:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete an income record (with user ownership validation)
+   */
+  static async deleteIncome(id: number, userId: number): Promise<void> {
+    try {
+      const result = await db.query('DELETE FROM incomes WHERE id = $1 AND user_id = $2', [id, userId])
+      
+      if (result.rowCount === 0) {
+        throw new Error(`Income not found with id: ${id} for this user`)
+      }
+    } catch (error) {
+      console.error('Error deleting income:', error)
+      throw error
+    }
+  }
+
+  // =============================================================================
+  // BUDGET OPERATIONS
+  // =============================================================================
+
+  /**
+   * Create a new budget record
+   */
+  static async createBudget(budget: Omit<BudgetRecord, 'id' | 'created_at' | 'updated_at'>): Promise<BudgetRecord> {
+    try {
+      const result = await db.query(
+        `INSERT INTO budgets 
+         (user_id, timestamp, date, amount, notes, budget_type, period_start, period_end, source, external_id, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING *`,
+        [
+          budget.user_id,
+          budget.timestamp || null,
+          budget.date,
+          budget.amount,
+          budget.notes || null,
+          budget.budget_type || 'monthly',
+          budget.period_start || null,
+          budget.period_end || null,
+          budget.source || 'manual',
+          budget.external_id || null,
+          budget.is_active !== undefined ? budget.is_active : true
+        ]
+      )
+
+      return result.rows[0] as BudgetRecord
+    } catch (error) {
+      console.error('Error creating budget:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get budgets for a user with optional date filtering
+   */
+  static async getBudgets(
+    userId: number, 
+    startDate?: string, 
+    endDate?: string
+  ): Promise<BudgetRecord[]> {
+    try {
+      let query = 'SELECT * FROM budgets WHERE user_id = $1'
+      const params: any[] = [userId]
+      let paramIndex = 2
+
+      if (startDate) {
+        query += ` AND date >= $${paramIndex}`
+        params.push(startDate)
+        paramIndex++
+      }
+
+      if (endDate) {
+        query += ` AND date <= $${paramIndex}`
+        params.push(endDate)
+        paramIndex++
+      }
+
+      query += ' ORDER BY date DESC, created_at DESC'
+
+      const result = await db.query(query, params)
+      return result.rows as BudgetRecord[]
+    } catch (error) {
+      console.error('Error fetching budgets:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update a budget record (with user ownership validation)
+   */
+  static async updateBudget(id: number, userId: number, updates: Partial<BudgetRecord>): Promise<BudgetRecord> {
+    try {
+      const updateFields = Object.keys(updates).filter(key => key !== 'id' && key !== 'created_at' && key !== 'updated_at' && key !== 'user_id')
+      const setClause = updateFields.map((field, index) => `${field} = $${index + 1}`).join(', ')
+      const values = updateFields.map(field => (updates as any)[field])
+      values.push(id, userId) // id and userId for WHERE clause
+
+      const result = await db.query(
+        `UPDATE budgets SET ${setClause}, updated_at = NOW() WHERE id = $${values.length - 1} AND user_id = $${values.length} RETURNING *`,
+        values
+      )
+
+      if (result.rows.length === 0) {
+        throw new Error(`Budget not found with id: ${id} for this user`)
+      }
+
+      return result.rows[0] as BudgetRecord
+    } catch (error) {
+      console.error('Error updating budget:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete a budget record (with user ownership validation)
+   */
+  static async deleteBudget(id: number, userId: number): Promise<void> {
+    try {
+      const result = await db.query('DELETE FROM budgets WHERE id = $1 AND user_id = $2', [id, userId])
+      
+      if (result.rowCount === 0) {
+        throw new Error(`Budget not found with id: ${id} for this user`)
+      }
+    } catch (error) {
+      console.error('Error deleting budget:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Upsert budget (update if exists for same month, create if not)
+   */
+  static async upsertBudget(budget: Omit<BudgetRecord, 'id' | 'created_at' | 'updated_at'>): Promise<BudgetRecord> {
+    try {
+      // Check if budget exists for the same month
+      const budgetDate = new Date(budget.date)
+      const year = budgetDate.getFullYear()
+      const month = budgetDate.getMonth() + 1 // getMonth() returns 0-11, we need 1-12
+      
+      const existingResult = await db.query(
+        `SELECT * FROM budgets 
+         WHERE user_id = $1 
+         AND EXTRACT(YEAR FROM date) = $2 
+         AND EXTRACT(MONTH FROM date) = $3 
+         ORDER BY date DESC LIMIT 1`,
+        [budget.user_id, year, month]
+      )
+
+      if (existingResult.rows.length > 0) {
+        // Update existing budget
+        const existingBudget = existingResult.rows[0]
+        return await this.updateBudget(existingBudget.id, budget.user_id, {
+          timestamp: budget.timestamp,
+          date: budget.date,
+          amount: budget.amount,
+          notes: budget.notes,
+          budget_type: budget.budget_type,
+          period_start: budget.period_start,
+          period_end: budget.period_end
+        })
+      } else {
+        // Create new budget
+        return await this.createBudget(budget)
+      }
+    } catch (error) {
+      console.error('Error upserting budget:', error)
+      throw error
+    }
+  }
+
+  // =============================================================================
+  // AGGREGATE OPERATIONS
+  // =============================================================================
+
+  /**
+   * Get all finance data for a user
+   */
+  static async getAllFinanceData(
+    userId: number, 
+    startDate?: string, 
+    endDate?: string
+  ): Promise<{
+    expenses: ExpenseRecord[];
+    incomes: IncomeRecord[];
+    budgets: BudgetRecord[];
+  }> {
+    try {
+      const [expenses, incomes, budgets] = await Promise.all([
+        this.getExpenses(userId, startDate, endDate),
+        this.getIncomes(userId, startDate, endDate),
+        this.getBudgets(userId, startDate, endDate)
+      ])
+
+      return { expenses, incomes, budgets }
+    } catch (error) {
+      console.error('Error fetching all finance data:', error)
       throw error
     }
   }
