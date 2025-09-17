@@ -40,7 +40,7 @@ interface FormData {
 }
 
 export function ExpenseForm({ onSubmit, loading, onCategorySwitch }: ExpenseFormProps) {
-  const [activeCategory, setActiveCategory] = useState<'income' | 'expense'>('expense')
+  const [activeCategory, setActiveCategory] = useState<'expense' | 'income'>('expense')
   const [amount, setAmount] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [date, setDate] = useState<Date>(new Date()) // Initialize with today's date

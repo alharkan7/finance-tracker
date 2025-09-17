@@ -161,9 +161,62 @@ export function Chart({
 
   if (loading) {
     return (
-      <div className="text-center py-4">
-        <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto" />
-        <p className="text-gray-600 mt-2">Loading data...</p>
+      <div className="text-center space-y-2 w-full max-w-sm">
+        {/* Header section - matches the navigation and balance display */}
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <button
+              disabled={true}
+              className="p-1 rounded-full text-gray-300 cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <p className="text-gray-600 text-sm">
+              Loading...
+            </p>
+            <button
+              disabled={true}
+              className="p-1 rounded-full text-gray-300 cursor-not-allowed"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Balance and Budget Info - matches the actual balance display */}
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900 break-words">
+              --
+            </h1>
+          </div>
+
+          <div className="text-center mt-2">
+            <p className="text-xs text-gray-500">
+              Budget: --
+            </p>
+          </div>
+        </div>
+
+        {/* Chart Container - matches the actual chart dimensions */}
+        <div className="h-46 p-2 w-full mx-auto max-w-full relative flex items-center justify-center">
+          <div className="h-40 w-40 mx-auto max-w-full relative rounded-lg overflow-hidden flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto" />
+              <p className="text-gray-600 mt-2 text-sm">Loading data...</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom section - matches the income/expense totals */}
+        <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
+          <span className="flex items-center justify-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-400">
+            <Plus className="w-4 h-4" />
+            --
+          </span>
+          <span className="flex items-center justify-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-400">
+            <Minus className="w-4 h-4" />
+            --
+          </span>
+        </div>
       </div>
     )
   }

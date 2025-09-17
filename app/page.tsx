@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signIn } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
-import { Bell, Wallet, Settings as SettingsIcon, Zap, LogIn, Loader2, AlertTriangle } from 'lucide-react'
+import { Bell, Settings as SettingsIcon, Zap, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
 import { ExpenseForm } from './components/expense-form'
 import { Settings } from './components/sheet-settings'
 import { BudgetDrawer } from './components/budget-drawer'
+import { LoadingSkeleton } from './components/loading-skeleton'
+import { LoginScreen } from './components/login-screen'
 import {
   Drawer,
   DrawerContent,
@@ -708,71 +710,14 @@ export default function MobileFinanceTracker() {
     }
   }
 
-
-  // Show loading while checking authentication
+  // Show loading skeleton when authentication status is loading
   if (status === 'loading') {
-    return (
-      <div className="w-full relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
-        {/* Full-width background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600"></div>
-
-        {/* Centered content */}
-        <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="animate-spin h-10 w-10 text-white mx-auto mb-3" />
-            <p className="text-white text-base">Loading...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingSkeleton />
   }
 
-  // Show login screen if not authenticated
-  if (status === 'unauthenticated' || !session) {
-    return (
-      <div className="w-full relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
-        {/* Full-width background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600"></div>
-
-        {/* Centered content */}
-        <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col">
-          {/* Header Space */}
-          <div className="p-3 w-full flex-shrink-0"></div>
-
-          {/* Login Content */}
-          <div className="flex-1 bg-white rounded-t-3xl p-4 flex flex-col items-center justify-center space-y-4 overflow-y-auto">
-          <div className="text-center space-y-3 max-w-md">
-            <Wallet className="w-12 h-12 text-blue-500 mx-auto" />
-            <h1 className="text-xl font-bold text-gray-900">
-              Welcome to Finance Tracker
-            </h1>
-            {/* <p className="text-gray-600 text-sm">
-              Please sign in with your Google account to access your personal expense data and connect to your Google Sheets.
-            </p> */}
-          </div>
-
-          <div className="space-y-3 w-full max-w-sm flex flex-col items-center space-y-4">
-            <Button
-              onClick={() => signIn('google')}
-              className="w-80 h-10 text-base font-medium"
-            >
-              <LogIn className="w-4 h-4 mr-2" />
-              Sign in with Google
-            </Button>
-
-            <div className="text-center text-xs text-gray-500 max-w-xs">
-              <p>
-                Your Google account will be used to securely access your personal expense tracker data stored in our PostgreSQL database.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="h-2 flex-shrink-0"></div>
-      </div>
-    </div>
-    )
+  // Show login screen only when explicitly unauthenticated
+  if (status === 'unauthenticated') {
+    return <LoginScreen />
   }
 
   return (
@@ -833,14 +778,12 @@ export default function MobileFinanceTracker() {
             onOpenBudgetDrawer={() => setIsBudgetDrawerOpen(true)}
           />
 
-        {/* Form Section - Always show when data is loaded (PostgreSQL always available) */}
-        {!loading && (
-          <ExpenseForm
-            onSubmit={handleFormSubmit}
-            loading={formLoading}
-            onCategorySwitch={handleCategorySwitch}
-          />
-        )}
+        {/* Form Section - Always show */}
+        <ExpenseForm
+          onSubmit={handleFormSubmit}
+          loading={formLoading}
+          onCategorySwitch={handleCategorySwitch}
+        />
       </div>
 
       {/* Bottom Navigation */}
