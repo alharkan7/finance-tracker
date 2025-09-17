@@ -442,7 +442,7 @@ export function TransactionTable({
           </div>
 
           {/* Transaction List */}
-          <div className="space-y-2 max-h-[50vh] overflow-y-auto pb-0">
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto pb-2">
             {processedData.length === 0 ? (
               <div className="text-center py-8 text-gray-500 text-sm">
                 Tidak ada transaksi untuk bulan ini
