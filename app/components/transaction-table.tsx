@@ -323,7 +323,7 @@ export function TransactionTable({
   }
 
   return (
-    <div className="space-y-4 w-full max-w-sm h-full">
+    <div className="space-y-4 w-full h-full">
       {/* Header with back button and month navigation */}
       <div className="flex items-center justify-between mb-4">
         {/* Back button */}

@@ -20,35 +20,35 @@ const handler = NextAuth({
   ],
   callbacks: {
     async jwt({ token, account, user }) {
-      console.log("JWT Callback:", { account: !!account, user: !!user, token: !!token })
+      // console.log("JWT Callback:", { account: !!account, user: !!user, token: !!token })
       if (account) {
-        console.log("Account provider:", account.provider)
-        console.log("Account has access_token:", !!account.access_token)
-        console.log("Account has refresh_token:", !!account.refresh_token)
+        // console.log("Account provider:", account.provider)
+        // console.log("Account has access_token:", !!account.access_token)
+        // console.log("Account has refresh_token:", !!account.refresh_token)
         token.accessToken = account.access_token
         token.refreshToken = account.refresh_token
       }
       return token
     },
     async session({ session, token }) {
-      console.log("Session Callback:", { session: !!session, token: !!token })
-      console.log("Token has accessToken:", !!token.accessToken)
+      // console.log("Session Callback:", { session: !!session, token: !!token })
+      // console.log("Token has accessToken:", !!token.accessToken)
       session.accessToken = token.accessToken as string
       session.refreshToken = token.refreshToken as string
       return session
     },
     async redirect({ url, baseUrl }) {
-      console.log("Redirect Callback:", { url, baseUrl })
+      // console.log("Redirect Callback:", { url, baseUrl })
       if (url.startsWith("/")) return `${baseUrl}${url}`
       else if (new URL(url).origin === baseUrl) return url
       return baseUrl
     },
     async signIn({ user, account, profile }) {
-      console.log("SignIn Callback:", { 
-        user: user?.email, 
-        account: account?.provider, 
-        profile: profile?.email 
-      })
+      // console.log("SignIn Callback:", { 
+      //   user: user?.email, 
+      //   account: account?.provider, 
+      //   profile: profile?.email 
+      // })
       
       try {
         // Save user to database on successful sign in
@@ -57,7 +57,7 @@ const handler = NextAuth({
             user.email, 
             user.image || undefined
           )
-          console.log("User saved/found in database:", dbUser.email)
+          // console.log("User saved/found in database:", dbUser.email)
         }
       } catch (error) {
         console.error("Error saving user to database:", error)

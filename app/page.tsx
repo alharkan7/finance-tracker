@@ -818,7 +818,7 @@ export default function MobileFinanceTracker() {
       <div className="flex-1 bg-white rounded-t-3xl p-4 w-full overflow-hidden flex flex-col items-center relative">
 
         {/* Chart or Transaction Table Section */}
-        <div className="w-full h-full relative">
+        <div className="w-full h-full relative overflow-hidden">
           {/* Chart Section */}
           <div 
             className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
