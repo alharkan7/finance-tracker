@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
-import { Bell, Settings as SettingsIcon, Zap, AlertTriangle } from 'lucide-react'
+import { Bell, Settings as SettingsIcon, Zap, AlertTriangle, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { UserMenu } from './components/user-menu'
 import { Chart } from './components/chart'
@@ -175,6 +175,14 @@ export default function MobileFinanceTracker() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   
+  // DEBUG: Log the initial month state
+  console.log('DEBUG page.tsx initial state:', {
+    currentMonth,
+    currentYear,
+    realCurrentMonth: new Date().getMonth(),
+    realCurrentYear: new Date().getFullYear()
+  })
+  
   // Filter data by selected month with better error handling
   const filterDataByMonth = (data: any[]) => {
     return data.filter(item => {
@@ -257,26 +265,34 @@ export default function MobileFinanceTracker() {
     }
   }
 
-  const canNavigatePrev = () => {
-    const { minDate } = getDateLimits()
-    const prevMonth = new Date(currentYear, currentMonth - 1, 1)
-    return prevMonth >= minDate
-  }
-
-  const canNavigateNext = () => {
-    const { maxDate } = getDateLimits()
-    const nextMonth = new Date(currentYear, currentMonth + 1, 1)
-    return nextMonth <= maxDate
-  }
-
   // Process budget data from the aggregated API response
   const processBudgetData = (budgets: any[]) => {
     // Group budgets by month and take the latest entry for each month
     const budgetMap: {[key: string]: number} = {}
+    
+    // DEBUG: Log raw budget data
+    console.log('DEBUG page.tsx processBudgetData raw data:', budgets)
 
     budgets.forEach((budget: any) => {
-      const monthKey = budget.date.substring(0, 7) // YYYY-MM format
-      if (!budgetMap[monthKey] || new Date(budget.timestamp) > new Date(budgets.find((b: any) => b.date.substring(0, 7) === monthKey)?.timestamp || 0)) {
+      // Fix timezone issue: parse the date and extract year-month in local timezone
+      const budgetDate = new Date(budget.date)
+      const monthKey = `${budgetDate.getFullYear()}-${String(budgetDate.getMonth() + 1).padStart(2, '0')}`
+      
+      // DEBUG: Log each budget processing in page.tsx
+      console.log('DEBUG page.tsx processing budget:', {
+        budget,
+        extractedMonthKey: monthKey,
+        originalDate: budget.date,
+        parsedDate: budgetDate,
+        fixedMonthKey: monthKey
+      })
+      
+      // For comparison, we need to use the same monthKey logic for finding existing budgets
+      if (!budgetMap[monthKey] || new Date(budget.timestamp) > new Date(budgets.find((b: any) => {
+        const bDate = new Date(b.date)
+        const bMonthKey = `${bDate.getFullYear()}-${String(bDate.getMonth() + 1).padStart(2, '0')}`
+        return bMonthKey === monthKey
+      })?.timestamp || 0)) {
         budgetMap[monthKey] = budget.amount
       }
     })
@@ -284,7 +300,7 @@ export default function MobileFinanceTracker() {
     setAllBudgets(budgetMap)
     setBudgetsLoaded(true)
 
-    // Set current month's budget
+    // Set current month's budget - currentMonth is 0-based, so add 1 for database month
     const currentMonthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
     setMonthlyBudget(budgetMap[currentMonthKey] || 0)
   }
@@ -319,19 +335,21 @@ export default function MobileFinanceTracker() {
   }
 
   // Get budget for a specific month (from cache)
+  // month parameter is 0-based (0 = January, 11 = December)
   const getBudgetForMonth = (month: number, year: number) => {
     const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
-    return allBudgets[monthKey] || 0
-  }
-
-  // Helper function to get month range
-  const getMonthRange = (date: Date) => {
-    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1)
-    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0)
-    return {
-      firstDay: `${firstDay.getFullYear()}-${String(firstDay.getMonth() + 1).padStart(2, '0')}-${String(firstDay.getDate()).padStart(2, '0')}`,
-      lastDay: `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`
-    }
+    const budget = allBudgets[monthKey] || 0
+    
+    // DEBUG: Log the lookup
+    console.log('DEBUG getBudgetForMonth:', {
+      month,
+      year,
+      monthKey,
+      budget,
+      allBudgets: Object.keys(allBudgets)
+    })
+    
+    return budget
   }
 
 
@@ -516,11 +534,6 @@ export default function MobileFinanceTracker() {
   // Handle chart type switch
   const handleChartTypeSwitch = (type: 'donut' | 'line') => {
     setChartType(type)
-  }
-
-  // Clear error state
-  const handleClearError = () => {
-    setError(null)
   }
 
   // Initialize user data when authenticated
@@ -729,24 +742,46 @@ export default function MobileFinanceTracker() {
       <div className="relative z-10 h-full w-full max-w-sm mx-auto flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-3 w-full flex-shrink-0">
-          <div className="relative">
-            <Bell
-              className="w-5 h-5 text-white cursor-pointer"
-              onClick={() => {
-                console.log('Bell clicked, balance:', balance, 'monthlyBudget:', monthlyBudget, 'totalExpenses:', totalExpenses, 'isNaN(balance):', isNaN(balance))
-                if (balance < 0 && !isNaN(balance)) {
-                  setIsBudgetAlertOpen(true)
-                } else if (!isNaN(balance)) {
-                  console.log('Showing toast message')
-                  toast.success("No issue. Everything is fine! 👍")
-                } else {
-                  console.log('Balance is NaN, not showing anything')
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Bell
+                className="w-5 h-5 text-white cursor-pointer"
+                onClick={() => {
+                  console.log('Bell clicked, balance:', balance, 'monthlyBudget:', monthlyBudget, 'totalExpenses:', totalExpenses, 'isNaN(balance):', isNaN(balance))
+                  if (balance < 0 && !isNaN(balance)) {
+                    setIsBudgetAlertOpen(true)
+                  } else if (!isNaN(balance)) {
+                    console.log('Showing toast message')
+                    toast.success("No issue. Everything is fine! 👍")
+                  } else {
+                    console.log('Balance is NaN, not showing anything')
+                  }
+                }}
+              />
+              {balance < 0 && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></div>
+              )}
+            </div>
+            <RefreshCw
+              className="w-5 h-5 text-white cursor-pointer hover:text-white/80 transition-colors"
+              onClick={async () => {
+                try {
+                  clearCache()
+                  await Promise.all([
+                    fetchData(true),
+                    fetchUserCategories() // Also refresh categories
+                  ])
+                  // Reset budget drawer state if open to force refresh
+                  if (isBudgetDrawerOpen) {
+                    setBudgetsLoaded(false)
+                  }
+                  toast.success("Data refreshed successfully!")
+                } catch (error) {
+                  console.error('Error refreshing data:', error)
+                  toast.error("Failed to refresh data")
                 }
               }}
             />
-            {balance < 0 && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></div>
-            )}
           </div>
           <UserMenu />
         </div>
@@ -806,7 +841,7 @@ export default function MobileFinanceTracker() {
           <DrawerTrigger asChild>
             <Button variant="neutral" className="flex-1 h-8 text-xs border border-gray-300 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 bg-transparent">
               <SettingsIcon className="w-3 h-3 mr-1" />
-              Settings
+              Pengaturan
             </Button>
           </DrawerTrigger>
           <DrawerContent className="max-h-[80vh] w-full max-w-sm mx-auto flex flex-col">
@@ -838,15 +873,15 @@ export default function MobileFinanceTracker() {
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center gap-2 text-red-600 text-lg">
                 <AlertTriangle className="w-5 h-5" />
-                Budget Alert
+                Peringatan Anggaran
               </DialogTitle>
               <DialogDescription className="text-sm space-y-2 text-center">
-                <p className="text-gray-700">Your spending has exceeded your income by:</p>
+                <p className="text-gray-700">Pengeluaran Anda melebihi pendapatan sebesar:</p>
                 <p className="text-xl font-bold text-red-600">
                   Rp {Math.abs(balance).toLocaleString('id-ID')}
                 </p>
                 <p className="text-gray-600 text-sm">
-                  Consider reviewing your expenses to get back on track.
+                  Kembali ke jalur yang benar.
                 </p>
               </DialogDescription>
             </DialogHeader>

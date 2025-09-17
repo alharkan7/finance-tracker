@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { ChevronLeft, ChevronRight, Edit3, Save, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -60,11 +59,19 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
 
   // Navigate to previous month
   const goToPreviousMonth = () => {
+    // Reset editing state when changing months
+    setIsEditing(false)
+    setEditingAmount('')
+    setHasChanges(false)
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
   }
 
   // Navigate to next month
   const goToNextMonth = () => {
+    // Reset editing state when changing months
+    setIsEditing(false)
+    setEditingAmount('')
+    setHasChanges(false)
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
   }
 
@@ -77,13 +84,28 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
       if (response.ok) {
         const data = await response.json()
         const budgets: BudgetData[] = data.budgets || []
+        
+        // DEBUG: Log raw budget data from API
+        console.log('DEBUG raw budget data from API:', budgets)
 
         // Group budgets by month
         const monthlyBudgets: MonthlyBudget[] = []
         const monthMap = new Map<string, BudgetData[]>()
 
         budgets.forEach(budget => {
-          const month = budget.date.substring(0, 7) // YYYY-MM format
+          // Fix timezone issue: parse the date and extract year-month in local timezone
+          const budgetDate = new Date(budget.date)
+          const month = `${budgetDate.getFullYear()}-${String(budgetDate.getMonth() + 1).padStart(2, '0')}`
+          
+          // DEBUG: Log each budget processing
+          console.log('DEBUG processing budget:', {
+            budget,
+            extractedMonth: month,
+            originalDate: budget.date,
+            parsedDate: budgetDate,
+            fixedMonth: month
+          })
+          
           if (!monthMap.has(month)) {
             monthMap.set(month, [])
           }
@@ -119,8 +141,19 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
 
   // Get current month's budget from local data
   const getCurrentMonthBudget = () => {
+    // currentMonth is a Date object, getMonth() returns 0-based month, so add 1 for database format
     const currentMonthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
     const monthBudget = allBudgets.find(budget => budget.month === currentMonthKey)
+    
+    // DEBUG: Log the lookup
+    console.log('DEBUG getCurrentMonthBudget:', {
+      currentMonth,
+      currentMonthJS: currentMonth.getMonth(),
+      currentMonthDisplay: currentMonth.getMonth() + 1,
+      currentMonthKey,
+      availableBudgets: allBudgets.map(b => b.month),
+      foundBudget: monthBudget
+    })
 
     if (monthBudget) {
       setBudgetAmount(monthBudget.amount)
@@ -143,6 +176,16 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
     try {
       setLoading(true)
       const { firstDay } = getMonthRange(currentMonth)
+      
+      // DEBUG: Log the values being used
+      console.log('DEBUG saveBudget:', {
+        currentMonth,
+        currentMonthJS: currentMonth.getMonth(),
+        currentMonthDisplay: currentMonth.getMonth() + 1,
+        firstDay,
+        propCurrentMonth,
+        propCurrentYear
+      })
 
       const response = await fetch('/api/submit-budget', {
         method: 'POST',
@@ -155,7 +198,7 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
       })
 
       if (response.ok) {
-        // Update local data
+        // Update local data - currentMonth is Date object, getMonth() is 0-based, add 1 for DB format
         const currentMonthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
         const existingIndex = allBudgets.findIndex(budget => budget.month === currentMonthKey)
 
@@ -192,15 +235,11 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
 
   // Start editing
   const startEditing = () => {
-    setEditingAmount(budgetAmount.toString())
+    setEditingAmount(Math.floor(budgetAmount).toString())
     setIsEditing(true)
     setHasChanges(false)
   }
 
-  // Handle double-click to start editing
-  const handleDoubleClick = () => {
-    startEditing()
-  }
 
   // Cancel editing
   const cancelEditing = () => {
@@ -218,8 +257,14 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
   }
 
   // Update current month when props change
+  // propCurrentMonth is 0-based (0 = January, 11 = December) from page.tsx
   useEffect(() => {
     if (propCurrentMonth !== undefined && propCurrentYear !== undefined) {
+      console.log('DEBUG budget drawer props update:', {
+        propCurrentMonth,
+        propCurrentYear,
+        newDateObject: new Date(propCurrentYear, propCurrentMonth, 1)
+      })
       setCurrentMonth(new Date(propCurrentYear, propCurrentMonth, 1))
     }
   }, [propCurrentMonth, propCurrentYear])
@@ -305,12 +350,12 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
                       type="text"
                       placeholder="0"
                       inputMode="numeric"
-                      value={editingAmount ? new Intl.NumberFormat('id-ID').format(Number(editingAmount)) : ''}
+                      value={editingAmount ? Math.floor(Number(editingAmount)).toLocaleString('id-ID') : ''}
                       onChange={(e) => {
                         const numericValue = e.target.value.replace(/\./g, '');
                         if (/^\d*$/.test(numericValue)) {
                           setEditingAmount(numericValue);
-                          setHasChanges(numericValue !== budgetAmount.toString());
+                          setHasChanges(numericValue !== Math.floor(budgetAmount).toString());
                         }
                       }}
                       className="text-2xl h-[3rem] leading-[3rem] font-medium border-0 border-b border-gray-300 rounded-none focus:placeholder:opacity-0 focus:border-gray-600 focus:outline-none focus:ring-0 px-0 placeholder:text-gray-400 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full pl-[3rem] bg-transparent"
@@ -324,13 +369,16 @@ export function BudgetDrawer({ isOpen, onClose, currentMonth: propCurrentMonth, 
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 text-2xl text-gray-600 font-medium">
                     Rp
                   </span>
-                  <div
-                    className="text-4xl h-[4rem] leading-[4rem] font-medium border-0 border-b border-gray-300 rounded-none text-center w-full pl-[3rem] bg-transparent cursor-pointer hover:bg-gray-50 transition-colors"
-                    onDoubleClick={handleDoubleClick}
-                    title="Double-click to edit budget"
-                  >
-                    {budgetAmount > 0 ? budgetAmount.toLocaleString('id-ID') : '0'}
+                  <div className="text-4xl h-[4rem] leading-[4rem] font-medium border-0 border-b border-gray-300 rounded-none text-center w-full pl-[3rem] bg-transparent">
+                    {budgetAmount > 0 ? Math.floor(budgetAmount).toLocaleString('id-ID') : '0'}
                   </div>
+                  <span 
+                    onClick={loading ? undefined : startEditing}
+                    className={`absolute right-1 bottom-4 transition-colors ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                    title="Edit budget"
+                  >
+                    <Edit3 className={`w-4 h-4 text-gray-400 transition-colors ${loading ? '' : 'hover:text-gray-600'}`} />
+                  </span>
                 </div>
               </div>
             )}
