@@ -66,30 +66,30 @@ export interface UpdateFinanceTrackerUser {
 
 // Default expense categories matching selections.ts
 export const DEFAULT_EXPENSE_CATEGORIES: Category[] = [
-  { value: '🍔 Food & Beverages', label: 'Food & Beverages', icon: 'Utensils' },
-  { value: '🥫 Snacks', label: 'Snacks', icon: 'Donut' },
-  { value: '🛒 Groceries', label: 'Groceries', icon: 'ShoppingBasket' },
-  { value: '🚗 Transportation', label: 'Transportation', icon: 'Bus' },
-  { value: '🎓 Education', label: 'Education', icon: 'Book' },
-  { value: '🍿 Entertainment', label: 'Entertainment', icon: 'Tv' },
-  { value: '🎁 Gift & Donations', label: 'Gift & Donations', icon: 'Gift' },
-  { value: '😊 Family', label: 'Family', icon: 'Users' },
-  { value: '💊 Health', label: 'Health', icon: 'Heart' },
-  { value: '🧾 Bill & Utilities', label: 'Bill & Utilities', icon: 'FileText' },
-  { value: '💵 Fees & Charges', label: 'Fees & Charges', icon: 'DollarSign' },
-  { value: '🛍️ Shopping', label: 'Shopping', icon: 'ShoppingBag' },
-  { value: '💰 Investment', label: 'Investment', icon: 'ChartArea' },
-  { value: '🏠 Accommodation', label: 'Accommodation', icon: 'Home' },
-  { value: '🎲 Others', label: 'Others', icon: 'Dices' }
+  { value: '🍔 Makan & Minum', label: 'Makan & Minum', icon: 'Utensils' },
+  { value: '🥫 Camilan', label: 'Camilan', icon: 'Donut' },
+  { value: '🛒 Bahan Masak', label: 'Bahan Masak', icon: 'ShoppingBasket' },
+  { value: '🚗 Transportasi', label: 'Transportasi', icon: 'Bus' },
+  { value: '🎓 Pendidikan', label: 'Pendidikan', icon: 'Book' },
+  { value: '🍿 Hiburan', label: 'Hiburan', icon: 'Tv' },
+  { value: '🎁 Hadiah & Donasi', label: 'Hadiah & Donasi', icon: 'Gift' },
+  { value: '😊 Keluarga', label: 'Keluarga', icon: 'Users' },
+  { value: '💊 Kesehatan', label: 'Kesehatan', icon: 'Heart' },
+  { value: '🧾 Tagihan & Lainnya', label: 'Tagihan & Lainnya', icon: 'FileText' },
+  { value: '💵 Biaya-biaya', label: 'Biaya-biaya', icon: 'DollarSign' },
+  { value: '🛍️ Belanja', label: 'Belanja', icon: 'ShoppingBag' },
+  { value: '💰 Investasi', label: 'Investasi', icon: 'ChartArea' },
+  { value: '🏠 Akomodasi', label: 'Akomodasi', icon: 'Home' },
+  { value: '🎲 Lainnya', label: 'Lainnya', icon: 'Dices' }
 ];
 
 // Default income categories matching selections.ts
 export const DEFAULT_INCOME_CATEGORIES: Category[] = [
-  { value: '💰 Salary', label: 'Salary', icon: 'Banknote' },
+  { value: '💰 Gaji', label: 'Gaji', icon: 'Banknote' },
   { value: '✍🏼 Event', label: 'Event', icon: 'PenLine' },
-  { value: '💼 Business', label: 'Business', icon: 'BriefcaseBusiness' },
-  { value: '🎁 Gift', label: 'Gift', icon: 'Landmark' },
-  { value: '🎲 Others', label: 'Others', icon: 'Dices' }
+  { value: '💼 Bisnis', label: 'Bisnis', icon: 'BriefcaseBusiness' },
+  { value: '🎁 Hadiah', label: 'Hadiah', icon: 'Landmark' },
+  { value: '🎲 Lainnya', label: 'Lainnya', icon: 'Dices' }
 ];
 
 // Database query result types

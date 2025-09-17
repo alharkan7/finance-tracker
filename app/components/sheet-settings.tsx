@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CheckCircle, Save, X, Smile, Check, Pencil } from 'lucide-react'
+import { CheckCircle, Save, X, Smile, Check, Pencil, Download } from 'lucide-react'
 import { Category } from '@/schema/schema'
 import { toast } from "sonner"
+import * as XLSX from 'xlsx'
 
 interface SettingsProps {
   userEmail: string;
@@ -29,6 +30,7 @@ export function Settings({
   const [editingExpenseMode, setEditingExpenseMode] = useState(false)
   const [editingIncomeMode, setEditingIncomeMode] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // Update state when props change
   useEffect(() => {
@@ -131,6 +133,103 @@ export function Settings({
     if (editingEmojiType === 'income') {
       setEditingEmojiIndex(null)
       setEditingEmojiType(null)
+    }
+  }
+
+  // Export user data to XLSX
+  const handleExportData = async () => {
+    setExporting(true)
+    try {
+      // Fetch all user data
+      const response = await fetch('/api/fetch-all-data')
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch data')
+      }
+
+      const data = await response.json()
+      const expenses = data.expenses || []
+      const incomes = data.incomes || []
+      const budgets = data.budgets || []
+
+      // Create workbook
+      const wb = XLSX.utils.book_new()
+
+      // Helper functions for data formatting
+      const formatDate = (dateStr: string) => {
+        if (!dateStr) return ''
+        try {
+          const date = new Date(dateStr)
+          return date.toISOString().split('T')[0] // YYYY-MM-DD format
+        } catch {
+          return dateStr
+        }
+      }
+
+      const formatAmount = (amount: any) => {
+        if (amount === null || amount === undefined) return 0
+        const num = typeof amount === 'number' ? amount : parseFloat(amount.toString())
+        return Math.round(num) // Remove decimals, round to nearest integer
+      }
+
+      const formatTimestamp = (timestampStr: string) => {
+        if (!timestampStr) return ''
+        try {
+          const date = new Date(timestampStr)
+          return date.toISOString().replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:MM:SS format
+        } catch {
+          return timestampStr
+        }
+      }
+
+      // Format expenses data
+      const expensesData = expenses.map((expense: any) => ({
+        'Date': formatDate(expense.date),
+        'Amount': formatAmount(expense.amount),
+        'Category': expense.category,
+        'Description': expense.description || expense.notes || '',
+        'Created At': formatTimestamp(expense.created_at)
+      }))
+
+      // Format incomes data
+      const incomesData = incomes.map((income: any) => ({
+        'Date': formatDate(income.date),
+        'Amount': formatAmount(income.amount),
+        'Category': income.category,
+        'Description': income.description || '',
+        'Created At': formatTimestamp(income.created_at)
+      }))
+
+      // Format budgets data
+      const budgetsData = budgets.map((budget: any) => ({
+        'Date': formatDate(budget.date),
+        'Amount': formatAmount(budget.amount),
+        'Created At': budget.timestamp
+      }))
+
+      // Create worksheets
+      const wsExpenses = XLSX.utils.json_to_sheet(expensesData)
+      const wsIncomes = XLSX.utils.json_to_sheet(incomesData)
+      const wsBudgets = XLSX.utils.json_to_sheet(budgetsData)
+
+      // Add worksheets to workbook
+      XLSX.utils.book_append_sheet(wb, wsExpenses, 'Expenses')
+      XLSX.utils.book_append_sheet(wb, wsIncomes, 'Incomes')
+      XLSX.utils.book_append_sheet(wb, wsBudgets, 'Budget')
+
+      // Generate filename with current date
+      const now = new Date()
+      const filename = `expense-tracker-data-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}.xlsx`
+
+      // Save file
+      XLSX.writeFile(wb, filename)
+
+      toast.success('Data exported successfully!')
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      toast.error('Failed to export data')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -324,9 +423,18 @@ export function Settings({
         </div>
       </div>
 
-      {/* Fixed Footer with Save Button */}
+      {/* Fixed Footer with Save and Export Buttons */}
       <div className="flex-shrink-0 border-t border-gray-200 bg-white pt-2 pb-2 mt-2">
-        <div className="flex justify-end pr-4">
+        <div className="flex justify-between items-center px-4 gap-3">
+          <Button
+            onClick={handleExportData}
+            disabled={exporting || loading}
+            variant="outline"
+            className="flex items-center gap-2 rounded-full border-gray-300 text-sm"
+          >
+            <Download className="w-4 h-4" />
+            {exporting ? 'Exporting...' : 'Data'}
+          </Button>
           <Button
             onClick={handleSaveSettings}
             disabled={saving || loading}
