@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { Plus, Minus, Loader2, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -87,8 +87,8 @@ export function Chart({
   const canNavigatePrevInternal = prevMonth >= minDate
   const canNavigateNextInternal = nextMonth <= maxDate
 
-  // Prepare line chart data (daily aggregation)
-  const prepareLineChartData = () => {
+  // Prepare line chart data (daily aggregation) - memoized to prevent constant recalculation
+  const lineChartData = useMemo(() => {
     const dataToUse = mode === 'expense' ? expenses : incomes
     const filteredData = dataToUse.filter(item => {
       if (!item.date) return false
@@ -117,9 +117,7 @@ export function Chart({
     }
 
     return lineData
-  }
-
-  const lineChartData = prepareLineChartData()
+  }, [mode, expenses, incomes, currentMonth, currentYear])
 
   // Debug: log line chart data
   React.useEffect(() => {
@@ -161,7 +159,7 @@ export function Chart({
             <ChevronLeft className="w-4 h-4" />
           </button>
           <p className="text-gray-600 text-sm">
-            {chartType === 'donut' ? 'Saldo' : 'Trend'} {getMonthName(currentMonth)} {currentYear}
+            {chartType === 'donut' ? 'Saldo' : 'Tren'} {getMonthName(currentMonth)} {currentYear}
           </p>
           <button
             onClick={() => onNavigateMonth('next')}
@@ -175,30 +173,29 @@ export function Chart({
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        {chartType === 'donut' && (
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900 break-words">
-              Rp {balance.toLocaleString('id-ID')}
-            </h1>
-            {monthlyBudget === 0 && (
-              <button
-                onClick={onOpenBudgetDrawer}
-                className="text-blue-500 hover:text-blue-700 transition-colors"
-                title="Set budget for this month"
-              >
-                <Info className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        )}
-        {chartType === 'donut' && (
-          <div className="text-center mt-2">
-            <p className="text-xs text-gray-500">
-              Budget: Rp {monthlyBudget.toLocaleString('id-ID')}
-              {!budgetsLoaded && <Loader2 className="inline w-3 h-3 ml-1 animate-spin" />}
-            </p>
-          </div>
-        )}
+        
+        {/* Balance and Budget Info - Always show regardless of chart type */}
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 break-words">
+            Rp {balance.toLocaleString('id-ID')}
+          </h1>
+          {monthlyBudget === 0 && (
+            <button
+              onClick={onOpenBudgetDrawer}
+              className="text-blue-500 hover:text-blue-700 transition-colors"
+              title="Set budget for this month"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        
+        <div className="text-center mt-2">
+          <p className="text-xs text-gray-500">
+            Budget: Rp {monthlyBudget.toLocaleString('id-ID')}
+            {!budgetsLoaded && <Loader2 className="inline w-3 h-3 ml-1 animate-spin" />}
+          </p>
+        </div>
       </div>
 
       {/* Chart Container */}
@@ -272,9 +269,9 @@ export function Chart({
             </div>
           </div>
         ) : (
-          <div className="rounded-lg mt-4">
+          <div className="w-full h-full flex items-center justify-center">
             {lineChartData && lineChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+              <ResponsiveContainer width="100%" height={160}>
                 <LineChart
                   data={lineChartData}
                   margin={{
@@ -343,7 +340,7 @@ export function Chart({
               </LineChart>
             </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+              <div className="h-40 flex items-center justify-center text-gray-500 text-sm">
                 No data available for this month
               </div>
             )}
