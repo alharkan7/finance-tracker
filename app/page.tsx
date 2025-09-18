@@ -992,6 +992,7 @@ export default function MobileFinanceTracker() {
                 onSubmit={handleFormSubmit}
                 loading={formLoading}
                 onCategorySwitch={handleCategorySwitch}
+                isDemoMode={isDemoMode}
               />
             </div>
           </div>
