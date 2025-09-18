@@ -4,7 +4,7 @@ import { signIn } from 'next-auth/react'
 import { Button } from "@/components/ui/button"
 import { Wallet, LogIn } from 'lucide-react'
 
-export function LoginScreen() {
+export function LoginScreen({ onDemoClick }: { onDemoClick?: () => void }) {
   return (
     <div className="w-full relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Full-width background */}
@@ -27,13 +27,26 @@ export function LoginScreen() {
             </p> */}
           </div>
 
-          <div className="space-y-3 w-full max-w-sm flex flex-col items-center space-y-4">
+          <div className="w-full max-w-sm flex flex-col items-center space-y-2">
             <Button
               onClick={() => signIn('google')}
               className="w-80 h-10 text-base font-medium"
             >
-              <LogIn className="w-4 h-4 mr-2" />
+              <LogIn className="w-4 h-4" />
               Sign in with Google
+            </Button>
+
+            <div className="text-center text-sm text-gray-400">
+              or
+            </div>
+
+            <Button
+              onClick={onDemoClick}
+              variant="outline"
+              className="w-80 h-10"
+            >
+              <Wallet className="w-4 h-4" />
+              Open Demo
             </Button>
 
             <div className="text-center text-xs text-gray-500 max-w-xs">

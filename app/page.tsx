@@ -138,9 +138,83 @@ const clearCache = () => {
   }
 }
 
+// CSV parsing utilities for demo mode
+const parseCSV = (csvText: string): string[][] => {
+  const lines = csvText.split('\n').filter(line => line.trim())
+  return lines.map(line => {
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      if (char === '"') {
+        inQuotes = !inQuotes
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    result.push(current.trim())
+    return result
+  })
+}
+
+const loadDemoData = async () => {
+  try {
+    const [expensesResponse, incomesResponse, budgetsResponse] = await Promise.all([
+      fetch('/dummy_exp.csv'),
+      fetch('/dummy_inc.csv'),
+      fetch('/dummy_bud.csv')
+    ])
+
+    const [expensesCSV, incomesCSV, budgetsCSV] = await Promise.all([
+      expensesResponse.text(),
+      incomesResponse.text(),
+      budgetsResponse.text()
+    ])
+
+    // Parse expenses
+    const expensesLines = parseCSV(expensesCSV)
+    const expensesData: ExpenseData[] = expensesLines.slice(1).map(line => ({
+      date: line[0],
+      amount: parseFloat(line[1]),
+      category: line[2],
+      description: line[3] || undefined
+    })).filter(item => !isNaN(item.amount))
+
+    // Parse incomes
+    const incomesLines = parseCSV(incomesCSV)
+    const incomesData: IncomeData[] = incomesLines.slice(1).map(line => ({
+      date: line[0],
+      amount: parseFloat(line[1]),
+      category: line[2],
+      description: line[3] || undefined
+    })).filter(item => !isNaN(item.amount))
+
+    // Parse budgets
+    const budgetsLines = parseCSV(budgetsCSV)
+    const budgetsData = budgetsLines.slice(1).map(line => ({
+      timestamp: line[0],
+      date: line[1],
+      amount: parseFloat(line[2])
+    })).filter(item => !isNaN(item.amount))
+
+    return { expenses: expensesData, incomes: incomesData, budgets: budgetsData }
+  } catch (error) {
+    console.error('Error loading demo data:', error)
+    throw error
+  }
+}
+
 export default function MobileFinanceTracker() {
   const { data: session, status } = useSession()
-  
+
+  // Demo mode state
+  const [isDemoMode, setIsDemoMode] = useState(false)
+
   // Data state
   const [expenses, setExpenses] = useState<ExpenseData[]>([])
   const [incomes, setIncomes] = useState<IncomeData[]>([])
@@ -408,9 +482,66 @@ export default function MobileFinanceTracker() {
     }
   }
 
+  // Initialize demo mode
+  const initializeDemo = async () => {
+    try {
+      setLoading(true)
+      setIsDemoMode(true)
+
+      // Load demo data
+      const demoData = await loadDemoData()
+
+      // Set demo data
+      setExpenses(demoData.expenses)
+      setIncomes(demoData.incomes)
+
+      // Process budget data from demo
+      if (demoData.budgets.length > 0) {
+        processBudgetData(demoData.budgets)
+      }
+
+      // Load default categories
+      const { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } = await import('@/schema/schema')
+      setExpenseCategories(DEFAULT_EXPENSE_CATEGORIES)
+      setIncomeCategories(DEFAULT_INCOME_CATEGORIES)
+      setCategoriesLoading(false)
+
+      // Update chart data
+      const filteredExpenses = filterDataByMonth(demoData.expenses)
+      const filteredIncomes = filterDataByMonth(demoData.incomes)
+      const dataToUse = chartMode === 'expense' ? filteredExpenses : filteredIncomes
+      const categoryTotals: { [key: string]: number } = {}
+      dataToUse.forEach(item => {
+        if (item && item.category) {
+          const amount = typeof item.amount === 'number' ? item.amount : parseFloat(item.amount || '0')
+          if (!isNaN(amount)) {
+            categoryTotals[item.category] = (categoryTotals[item.category] || 0) + amount
+          }
+        }
+      })
+      const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
+      const newChartData = Object.entries(categoryTotals).map(([name, value], index) => ({
+        name,
+        value,
+        color: colors[index % colors.length]
+      }))
+      setChartData(newChartData.length > 0 ? newChartData : mockChartData)
+
+    } catch (error) {
+      console.error('Error initializing demo:', error)
+      setError({
+        message: 'Failed to load demo data',
+        errorType: 'DEMO_ERROR',
+        error: 'Unable to load demo data. Please try again.'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Fetch data from PostgreSQL database with caching
   const fetchData = async (forceRefresh = false) => {
-    if (!session) {
+    if (!session && !isDemoMode) {
       setLoading(false)
       return
     }
@@ -564,26 +695,32 @@ export default function MobileFinanceTracker() {
     setChartType(type)
   }
 
-  // Initialize user data when authenticated
+  // Initialize user data when authenticated or in demo mode
   useEffect(() => {
-    if (status === 'authenticated') {
-      // Fetch user categories and data
-      fetchUserCategories().then(() => {
-        // Load data (will use cache if valid, otherwise fetch fresh)
-        fetchData()
-      })
-    } else if (status === 'unauthenticated') {
+    if (status === 'authenticated' || isDemoMode) {
+      if (!isDemoMode) {
+        // Fetch user categories and data for authenticated users
+        fetchUserCategories().then(() => {
+          // Load data (will use cache if valid, otherwise fetch fresh)
+          fetchData()
+        })
+      }
+      // Demo mode initialization is handled separately
+    } else if (status === 'unauthenticated' && !isDemoMode) {
       setLoading(false)
       setCategoriesLoading(false)
     }
-  }, [session, status])
+  }, [session, status, isDemoMode])
 
-  // Fetch all budgets when user is authenticated
+  // Fetch all budgets when user is authenticated or in demo mode
   useEffect(() => {
-    if (status === 'authenticated' && !loading && !budgetsLoaded) {
-      fetchAllBudgets()
+    if ((status === 'authenticated' || isDemoMode) && !loading && !budgetsLoaded) {
+      if (!isDemoMode) {
+        fetchAllBudgets()
+      }
+      // Budgets are loaded in demo mode via initializeDemo
     }
-  }, [status, loading, budgetsLoaded])
+  }, [status, loading, budgetsLoaded, isDemoMode])
 
   // Update current month's budget when month changes (from cache)
   useEffect(() => {
@@ -751,14 +888,14 @@ export default function MobileFinanceTracker() {
     }
   }
 
-  // Show loading skeleton when authentication status is loading
-  if (status === 'loading') {
+  // Show loading skeleton when authentication status is loading and not in demo mode
+  if (status === 'loading' && !isDemoMode) {
     return <LoadingSkeleton />
   }
 
-  // Show login screen only when explicitly unauthenticated
-  if (status === 'unauthenticated') {
-    return <LoginScreen />
+  // Show login screen when not authenticated and not in demo mode
+  if (status === 'unauthenticated' && !isDemoMode) {
+    return <LoginScreen onDemoClick={initializeDemo} />
   }
 
   return (
@@ -811,7 +948,7 @@ export default function MobileFinanceTracker() {
               }}
             />
           </div>
-          <UserMenu />
+          <UserMenu isDemoMode={isDemoMode} />
         </div>
 
       {/* Main Content */}
@@ -941,16 +1078,12 @@ export default function MobileFinanceTracker() {
           <DialogContent className="w-full max-w-sm mx-auto rounded-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center gap-2 text-red-600 text-lg">
-                <AlertTriangle className="w-5 h-5" />
-                Peringatan Anggaran
+                Peringatan
               </DialogTitle>
               <DialogDescription className="text-sm space-y-2 text-center">
-                <p className="text-gray-700">Pengeluaran Anda melebihi pendapatan sebesar:</p>
+                <p className="text-gray-700">Pengeluaranmu melebihi anggaran sebesar:</p>
                 <p className="text-xl font-bold text-red-600">
                   Rp {Math.abs(balance).toLocaleString('id-ID')}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  Kembali ke jalur yang benar.
                 </p>
               </DialogDescription>
             </DialogHeader>
