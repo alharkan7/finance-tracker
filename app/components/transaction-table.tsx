@@ -581,7 +581,13 @@ export function TransactionTable({
                               onValueChange={(value) => setEditForm(prev => ({ ...prev, category: value }))}
                             >
                               <SelectTrigger className="h-8 text-xs flex-1">
-                                <SelectValue placeholder="Category" />
+                                <SelectValue placeholder="Category">
+                                  {editForm.category && (
+                                    <span className="truncate block w-full text-left">
+                                      {editForm.category}
+                                    </span>
+                                  )}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent className="bg-white">
                                 {currentCategories.map((category) => (
@@ -665,36 +671,39 @@ export function TransactionTable({
           <DialogHeader>
             <DialogTitle>Delete Transaction</DialogTitle>
             <DialogDescription>
-              <div className="my-2">
-              <span className="text-sm text-gray-600">Are you sure you want to delete this {activeTab === 'expense' ? 'expense' : 'income'}?</span>
-              </div>
-              {transactionToDelete && (
-                <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {transactionToDelete.category} <span className="text-xs text-gray-500">({formatDate(transactionToDelete.date)})</span>
-                      </p>
-                    </div>
-                    <p className={`text-sm font-semibold ${
-                      activeTab === 'expense' ? 'text-red-600' : 'text-green-600'
-                    }`}>
-                      {activeTab === 'expense' ? '-' : '+'}
-                      {formatAmount(transactionToDelete.amount)}
-                    </p>
-                  </div>
-                  {transactionToDelete.description && (
-                    <p className="text-xs text-gray-600 mt-1 text-left">
-                      {transactionToDelete.description}
-                    </p>
-                  )}
-                </div>
-              )}
-              <div className="mt-4">
-                <span className="text-sm text-gray-600">This action cannot be undone.</span>
-              </div>
+              Are you sure you want to delete this {activeTab === 'expense' ? 'expense' : 'income'}?
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Transaction Details */}
+          {transactionToDelete && (
+            <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {transactionToDelete.category} <span className="text-xs text-gray-500">({formatDate(transactionToDelete.date)})</span>
+                  </p>
+                </div>
+                <p className={`text-sm font-semibold ${
+                  activeTab === 'expense' ? 'text-red-600' : 'text-green-600'
+                }`}>
+                  {activeTab === 'expense' ? '-' : '+'}
+                  {formatAmount(transactionToDelete.amount)}
+                </p>
+              </div>
+              {transactionToDelete.description && (
+                <p className="text-xs text-gray-600 mt-1 text-left">
+                  {transactionToDelete.description}
+                </p>
+              )}
+            </div>
+          )}
+          
+          {/* Warning Message */}
+          <div className="text-center">
+            <span className="text-sm text-gray-600">This action cannot be undone.</span>
+          </div>
+
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
