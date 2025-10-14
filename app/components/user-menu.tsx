@@ -46,7 +46,9 @@ export function UserMenu({ isDemoMode = false }: UserMenuProps) {
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
-                <User className="w-6 h-6" />
+                <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
+                  {(user?.name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                </div>
               )}
             </Button>
           </DropdownMenuTrigger>

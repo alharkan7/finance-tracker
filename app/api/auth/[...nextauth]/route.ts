@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { DatabaseService } from "@/lib/database"
 
-const handler = NextAuth({
+export const authOptions = {
   debug: true,
   providers: [
     GoogleProvider({
@@ -68,6 +68,8 @@ const handler = NextAuth({
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-})
+}
+
+const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }
