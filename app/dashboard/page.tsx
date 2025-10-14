@@ -36,27 +36,6 @@ interface UserStat {
   income_count: number
 }
 
-interface UserDetails {
-  user: {
-    id: number
-    email: string
-    avatar?: string
-    created_at: string
-    last_login?: string
-  }
-  expenses: any[]
-  incomes: any[]
-  expenseByCategory: { [key: string]: number }
-  incomeByCategory: { [key: string]: number }
-  summary: {
-    totalExpenses: number
-    totalIncomes: number
-    balance: number
-    expenseCount: number
-    incomeCount: number
-  }
-}
-
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
 
@@ -84,11 +63,10 @@ export default function AdminDashboard() {
 
   // Password protection functions
   const checkPassword = () => {
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123' // fallback password for development
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD // fallback password for development
     if (password === adminPassword) {
       setIsAuthenticated(true)
       setPasswordError('')
-      localStorage.setItem('adminAuthenticated', 'true')
     } else {
       setPasswordError('Incorrect password')
     }
@@ -221,13 +199,6 @@ export default function AdminDashboard() {
     }
   }, [sheetOpen])
 
-  // Check authentication on mount
-  useEffect(() => {
-    const authenticated = localStorage.getItem('adminAuthenticated') === 'true'
-    if (authenticated) {
-      setIsAuthenticated(true)
-    }
-  }, [])
 
   // Initial load
   useEffect(() => {
