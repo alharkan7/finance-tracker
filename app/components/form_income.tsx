@@ -75,7 +75,9 @@ export function FormIncome({
             type="text"
             id="amount"
             placeholder="0"
-            inputMode="text"
+            inputMode="decimal"
+            pattern="[0-9+\-*/\s]*"
+            autoComplete="off"
             required
             value={displayValue}
             onChange={handleAmountChange}
