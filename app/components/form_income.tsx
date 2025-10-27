@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { categoriesIncome, subjectsIncome } from '@/lib/selections';
+import { useMathInput } from '@/lib/math-utils';
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -63,6 +64,8 @@ export function FormIncome({
   showValidation,
   handleSubmit,
 }: FormIncomeProps) {
+  const { displayValue, handleAmountChange } = useMathInput(amountValue, setAmountValue);
+
   return (
     <form className="shadow-sm hover:shadow-md transition-shadow duration-200 p-6 rounded-lg" onSubmit={handleSubmit}>
       <div className="space-y-2 w-full">
@@ -72,15 +75,10 @@ export function FormIncome({
             type="text"
             id="amount"
             placeholder="0"
-            inputMode="numeric"
+            inputMode="text"
             required
-            value={amountValue ? new Intl.NumberFormat('id-ID').format(Number(amountValue)) : ''}
-            onChange={(e) => {
-              const numericValue = e.target.value.replace(/\./g, '');
-              if (/^\d*$/.test(numericValue)) {
-                setAmountValue(numericValue);
-              }
-            }}
+            value={displayValue}
+            onChange={handleAmountChange}
             className="text-[2rem] h-[3rem] leading-[3rem] font-medium border-0 border-b border-secondary-foreground/50 rounded-none focus:placeholder:opacity-0 focus:border-opacity-0 focus:outline-none focus:ring-0 px-0 placeholder:text-secondary-foreground/50 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full pl-[3rem] bg-transparent"
           />
         </div>
