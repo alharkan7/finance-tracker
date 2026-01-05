@@ -10,6 +10,7 @@ import { CalendarIcon, TrendingUp, TrendingDown, Wallet, Loader2 } from 'lucide-
 import { convertDatabaseCategoriesToForm, FormCategory } from '@/lib/icon-mapper'
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { useMathInput } from '@/lib/math-utils'
 
 // Indonesian month names
 const indonesianMonths = [
@@ -54,6 +55,9 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch, isDemoMode = 
     category: false,
     date: false
   })
+
+  // Use math input hook for amount handling
+  const { displayValue: amountDisplayValue, handleAmountChange: handleMathInputChange } = useMathInput(amount, setAmount);
 
   // Fetch user categories
   const fetchUserCategories = async () => {
@@ -232,17 +236,16 @@ export function ExpenseForm({ onSubmit, loading, onCategorySwitch, isDemoMode = 
                 type="text"
                 id="amount"
                 placeholder="0"
-                inputMode="numeric"
+                inputMode="decimal"
+                pattern="[0-9+\-*/\s]*"
+                autoComplete="off"
                 required
-                value={amount ? new Intl.NumberFormat('id-ID').format(Number(amount)) : ''}
+                value={amountDisplayValue}
                 onChange={(e) => {
-                  const numericValue = e.target.value.replace(/\./g, '');
-                  if (/^\d*$/.test(numericValue)) {
-                    setAmount(numericValue);
-                    // Clear amount validation error when user starts typing or clears the field
-                    if (validationErrors.amount) {
-                      setValidationErrors(prev => ({ ...prev, amount: false }))
-                    }
+                  handleMathInputChange(e);
+                  // Clear amount validation error when user starts typing or clears the field
+                  if (validationErrors.amount) {
+                    setValidationErrors(prev => ({ ...prev, amount: false }))
                   }
                 }}
                 onBlur={() => {
