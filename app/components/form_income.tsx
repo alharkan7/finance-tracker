@@ -12,27 +12,7 @@ import { VoiceInputButton } from './voice_input_button';
 import { User2, Calendar } from 'lucide-react';
 
 function formatDropdownText(text: string) {
-  if (text.includes('&')) {
-    // If contains "&", make all words bold
-    return <span className="font-semibold">{text}</span>
-  }
-
-  const words = text.split(' ')
-  if (words.length <= 1) {
-    // Single word, return as is
-    return <span>{text}</span>
-  }
-
-  // Multiple words: first word bold, rest thin
-  const firstWord = words[0]
-  const restOfText = words.slice(1).join(' ')
-
-  return (
-    <span>
-      <span className="font-semibold">{firstWord}</span>
-      {restOfText && <span className="font-light"> {restOfText}</span>}
-    </span>
-  )
+  return <span className="font-medium">{text}</span>
 }
 
 interface FormIncomeProps {
@@ -106,10 +86,10 @@ export function FormIncome({
   const { displayValue, handleAmountChange } = useMathInput(amountValue, setAmountValue);
 
   return (
-    <form className="shadow-sm hover:shadow-md transition-shadow duration-200 p-6 rounded-lg" onSubmit={handleSubmit}>
-      <div className="space-y-2 w-full">
-        <div className="relative">
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[2rem] text-secondary-foreground/50 font-medium">Rp</span>
+    <form className="p-4" onSubmit={handleSubmit}>
+      <div className="space-y-2 w-full mb-8">
+        <div className="relative text-center">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl text-muted-foreground font-medium">Rp</span>
           <input
             type="text"
             id="amount"
@@ -120,14 +100,14 @@ export function FormIncome({
             required
             value={displayValue}
             onChange={handleAmountChange}
-            className="text-[2rem] h-[3rem] leading-[3rem] font-medium border-0 border-b border-secondary-foreground/50 rounded-none focus:placeholder:opacity-0 focus:border-opacity-0 focus:outline-none focus:ring-0 px-0 placeholder:text-secondary-foreground/50 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full pl-[3rem] bg-transparent"
+            className="w-full text-4xl h-16 font-bold text-center bg-transparent border-b-2 border-border focus:border-primary focus:outline-none transition-colors placeholder:text-muted-foreground/30 text-foreground"
           />
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-3 gap-4">
-        <div className="space-y-2 flex flex-col items-center">
-          <Label htmlFor="subject" className='text-xs text-muted-foreground'>Subject</Label>
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        <div className="space-y-1 flex flex-col items-center">
+          <Label htmlFor="subject" className='text-[10px] uppercase tracking-wider text-muted-foreground font-semibold'>Subject</Label>
           <Select
             value={subjectValue}
             required
@@ -135,11 +115,11 @@ export function FormIncome({
           >
             <SelectTrigger
               id="subject"
-              className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${showValidation && !subjectValue ? 'border-red-500 focus:ring-red-500' :
-                subjectValue ? '' : 'shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none'
+              className={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all hover:scale-105 active:scale-95 [&>svg:last-child]:hidden ${showValidation && !subjectValue ? 'ring-2 ring-destructive bg-destructive/10' :
+                subjectValue ? 'bg-primary/10 text-primary ring-2 ring-primary/20' : 'bg-secondary text-secondary-foreground'
                 }`}
             >
-              <User2 className="h-4 w-4" />
+              <User2 className="h-6 w-6" />
               <span className="sr-only"><SelectValue /></span>
             </SelectTrigger>
             <SelectContent>
@@ -150,12 +130,10 @@ export function FormIncome({
               ))}
             </SelectContent>
           </Select>
-          {showValidation && !subjectValue && (
-            <p className="text-sm text-red-500 mt-1">Select</p>
-          )}
         </div>
-        <div className="space-y-2 flex flex-col items-center">
-          <Label htmlFor="category" className='text-xs text-muted-foreground'>Category</Label>
+
+        <div className="space-y-1 flex flex-col items-center">
+          <Label htmlFor="category" className='text-[10px] uppercase tracking-wider text-muted-foreground font-semibold'>Category</Label>
           <Select
             value={categoryValue}
             required
@@ -163,16 +141,16 @@ export function FormIncome({
           >
             <SelectTrigger
               id="category"
-              className={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full [&>svg:last-child]:hidden ${showValidation && !categoryValue ? 'border-red-500 focus:ring-red-500' :
-                categoryValue ? '' : 'shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none'
+              className={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all hover:scale-105 active:scale-95 [&>svg:last-child]:hidden ${showValidation && !categoryValue ? 'ring-2 ring-destructive bg-destructive/10' :
+                categoryValue ? 'bg-primary/10 text-primary ring-2 ring-primary/20' : 'bg-secondary text-secondary-foreground'
                 }`}
             >
               {categoryValue ? (
                 React.createElement(categoriesIncome.find(cat => cat.value === categoryValue)?.icon || categoriesIncome[0].icon, {
-                  className: "h-4 w-4"
+                  className: "h-6 w-6"
                 })
               ) : (
-                React.createElement(categoriesIncome[0].icon, { className: "h-4 w-4" })
+                React.createElement(categoriesIncome[0].icon, { className: "h-6 w-6" })
               )}
               <span className="sr-only"><SelectValue /></span>
             </SelectTrigger>
@@ -187,44 +165,47 @@ export function FormIncome({
               ))}
             </SelectContent>
           </Select>
-          {showValidation && !categoryValue && (
-            <p className="text-sm text-red-500 mt-1">Select</p>
-          )}
         </div>
-        <div className="space-y-2 flex flex-col items-center">
-          <Label htmlFor="date" className='text-xs text-muted-foreground'>Date</Label>
+
+        <div className="space-y-1 flex flex-col items-center">
+          <Label htmlFor="date" className='text-[10px] uppercase tracking-wider text-muted-foreground font-semibold'>Date</Label>
           <DatePicker
             date={date}
             setDate={setDate}
-            triggerClassName={`w-10 h-10 p-0 flex items-center justify-center border-2 rounded-full ${date ? '' : 'shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none'}`}
-            icon={<Calendar className="h-4 w-4 flex-shrink-0" />}
+            triggerClassName={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all hover:scale-105 active:scale-95 ${date ? 'bg-primary/10 text-primary ring-2 ring-primary/20' : 'bg-secondary text-secondary-foreground'
+              }`}
+            icon={<Calendar className="h-6 w-6 flex-shrink-0" />}
           />
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 mb-6">
         <textarea
           id="description"
-          placeholder="Notes (optional)"
-          className="resize-none px-0 border-0 border-b border-secondary-foreground/50 rounded-none focus:ring-0 focus-visible:ring-0 focus:outline-none placeholder:text-secondary-foreground/50 w-full align-bottom placeholder:bottom-1 placeholder:left-0 flex h-[2rem] focus:placeholder:opacity-0 max-h-none overflow-hidden bg-transparent"
+          placeholder="Add a note..."
+          className="w-full resize-none p-3 rounded-xl bg-background border-2 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground text-sm min-h-[5rem]"
           value={descriptionValue}
           onChange={(e) => {
-            e.target.style.height = '2rem';
-            e.target.style.height = e.target.scrollHeight + 'px';
             setDescriptionValue(e.target.value);
+            // Auto expand
+            e.target.style.height = 'auto';
+            e.target.style.height = e.target.scrollHeight + 'px';
           }}
         />
       </div>
 
-      <div className="flex gap-2 mt-8">
-        <Button className="flex-1" variant="default" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save'}
+      <div className="flex gap-3">
+        <Button className="flex-1 h-14 text-base rounded-xl shadow-md shadow-primary/20" variant="default" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : 'Save Income'}
         </Button>
-        <VoiceInputButton
-          state={voiceState}
-          onClick={handleVoiceClick}
-          disabled={isSubmitting}
-        />
+        <div className="h-14 w-14">
+          <VoiceInputButton
+            state={voiceState}
+            onClick={handleVoiceClick}
+            disabled={isSubmitting}
+            className="w-full h-full rounded-xl"
+          />
+        </div>
       </div>
     </form>
   );

@@ -180,7 +180,7 @@ export default function FinanceTrackerPage() {
         setIncomeDescription('');
         setIncomeShowValidation(false);
       }
-      setFeedbackMessage(`${isExpense ? 'Expense' : 'Income'} Submitted Successfully!`);
+      setFeedbackMessage(`${isExpense ? 'Expense' : 'Income'} Saved`);
 
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -200,153 +200,150 @@ export default function FinanceTrackerPage() {
   };
 
   return (
-    <div className="h-[100vh] flex flex-col items-center justify-center">
-      <div className="w-full max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 py-2 px-4">
-        <div className="max-w-sm mx-auto relative bg-card py-6 px-0 rounded-sm">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
+      <div className="w-full max-w-md mx-auto px-4 py-8 md:py-12">
+        <div className="space-y-6">
 
-          <div className="text-center py-6 items-center">
-            <h2 className="text-2xl font-bold inline-flex items-center gap-2">
+          <header className="flex flex-col items-center justify-center space-y-2 mb-8">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Finance Tracker
-            </h2>
+            </h1>
+            {/* <p className="text-sm text-muted-foreground">
+              Manage your expenses and income
+            </p> */}
+          </header>
+
+          <AnimatePresence mode="wait">
             {feedbackMessage && (
-              <div className={`mt-4 px-3 py-1 text-sm font-medium rounded-md ${feedbackMessage.toLowerCase().includes('successfully')
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : feedbackMessage.includes('Submitting')
-                  ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                  : 'bg-red-50 text-red-800 border border-red-200'
-                }`}>
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className={`w-full p-3 rounded-lg text-sm font-medium text-center shadow-sm ${feedbackMessage.toLowerCase().includes('saved')
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : feedbackMessage.includes('Submitting')
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  }`}
+              >
                 {feedbackMessage}
-              </div>
+              </motion.div>
             )}
-          </div>
-          <div className="py-4 px-0">
-            <Tabs
-              defaultValue="expense"
-              className="w-full"
-              onValueChange={(value: string) => {
-                setActiveTab(value);
-                // Don't clear form data when switching tabs - preserve user input
-              }}
+          </AnimatePresence>
+
+          <Tabs
+            defaultValue="expense"
+            className="w-full"
+            onValueChange={(value: string) => {
+              setActiveTab(value);
+            }}
+          >
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="expense">Expense</TabsTrigger>
+              <TabsTrigger value="income">Income</TabsTrigger>
+              <TabsTrigger value="report">Reports</TabsTrigger>
+            </TabsList>
+
+            <AnimatePresence mode='wait'>
+              <TabsContent key="expense" value="expense" className="mt-0">
+                <motion.div
+                  key="expense-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-card rounded-2xl shadow-sm border border-border/40 p-1"
+                >
+                  <FormExpenses
+                    date={expenseDate}
+                    setDate={setExpenseDate}
+                    subjectValue={expenseSubject}
+                    setSubjectValue={setExpenseSubject}
+                    amountValue={expenseAmount}
+                    setAmountValue={setExpenseAmount}
+                    categoryValue={expenseCategory}
+                    setCategoryValue={setExpenseCategory}
+                    descriptionValue={expenseDescription}
+                    setDescriptionValue={setExpenseDescription}
+                    reimburseValue={expenseReimburse}
+                    setReimburseValue={setExpenseReimburse}
+                    isSubmitting={isSubmitting}
+                    handleSubmit={handleSubmit}
+                    showValidation={expenseShowValidation}
+                  />
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent key="income" value="income" className="mt-0">
+                <motion.div
+                  key="income-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-card rounded-2xl shadow-sm border border-border/40 p-1"
+                >
+                  <FormIncome
+                    date={incomeDate}
+                    setDate={setIncomeDate}
+                    subjectValue={incomeSubject}
+                    setSubjectValue={setIncomeSubject}
+                    amountValue={incomeAmount}
+                    setAmountValue={setIncomeAmount}
+                    categoryValue={incomeCategory}
+                    setCategoryValue={setIncomeCategory}
+                    descriptionValue={incomeDescription}
+                    setDescriptionValue={setIncomeDescription}
+                    isSubmitting={isSubmitting}
+                    handleSubmit={handleSubmit}
+                    showValidation={incomeShowValidation}
+                  />
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent key="report" value="report" className="mt-0">
+                <motion.div
+                  key="report-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-card rounded-2xl shadow-sm border border-border/40 p-1"
+                >
+                  <FormReport
+                    expenses={expenses}
+                    incomes={incomes}
+                    loading={reportLoading}
+                    error={reportError}
+                    onRefresh={refreshReportData}
+                  />
+                </motion.div>
+              </TabsContent>
+            </AnimatePresence>
+          </Tabs>
+
+          <div className="grid grid-cols-2 gap-4 pt-4">
+            <Button
+              type="button"
+              variant='outline'
+              className="w-full gap-2 h-12 rounded-xl bg-secondary/50 hover:bg-secondary border-transparent text-secondary-foreground"
+              onClick={() => window.location.href = process.env.NEXT_PUBLIC_SHEETS_URL || "https://bit.ly/pocket-tracker-sheet"}
             >
-              <TabsList className="grid w-full grid-cols-3 bg-bg text-text">
-                <TabsTrigger
-                  value="expense"
-                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
-                >
-                  Expense
-                </TabsTrigger>
-                <TabsTrigger
-                  value="income"
-                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
-                >
-                  Income
-                </TabsTrigger>
-                <TabsTrigger
-                  value="report"
-                  className="data-[state=active]:bg-main data-[state=active]:text-mtext"
-                >
-                  Reports
-                </TabsTrigger>
-              </TabsList>
-              <AnimatePresence initial={false}>
-                <TabsContent key="expense" value="expense">
-                  <motion.div
-                    key="expense-motion"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2 }}
-                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
-                  >
-                    <FormExpenses
-                      date={expenseDate}
-                      setDate={setExpenseDate}
-                      subjectValue={expenseSubject}
-                      setSubjectValue={setExpenseSubject}
-                      amountValue={expenseAmount}
-                      setAmountValue={setExpenseAmount}
-                      categoryValue={expenseCategory}
-                      setCategoryValue={setExpenseCategory}
-                      descriptionValue={expenseDescription}
-                      setDescriptionValue={setExpenseDescription}
-                      reimburseValue={expenseReimburse}
-                      setReimburseValue={setExpenseReimburse}
-                      isSubmitting={isSubmitting}
-                      handleSubmit={handleSubmit}
-                      showValidation={expenseShowValidation}
-                    />
-                  </motion.div>
-                </TabsContent>
-                <TabsContent key="income" value="income">
-                  <motion.div
-                    key="expense-motion"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2 }}
-                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
-                  >
-                    <FormIncome
-                      date={incomeDate}
-                      setDate={setIncomeDate}
-                      subjectValue={incomeSubject}
-                      setSubjectValue={setIncomeSubject}
-                      amountValue={incomeAmount}
-                      setAmountValue={setIncomeAmount}
-                      categoryValue={incomeCategory}
-                      setCategoryValue={setIncomeCategory}
-                      descriptionValue={incomeDescription}
-                      setDescriptionValue={setIncomeDescription}
-                      isSubmitting={isSubmitting}
-                      handleSubmit={handleSubmit}
-                      showValidation={incomeShowValidation}
-                    />
-                  </motion.div>
-                </TabsContent>
-                <TabsContent key="report" value="report">
-                  <motion.div
-                    key="report-motion"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2 }}
-                    className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
-                  >
-                    <FormReport
-                      expenses={expenses}
-                      incomes={incomes}
-                      loading={reportLoading}
-                      error={reportError}
-                      onRefresh={refreshReportData}
-                    />
-                  </motion.div>
-                </TabsContent>
-              </AnimatePresence>
-            </Tabs>
-            <div className="flex justify-between mt-4 gap-4">
-              <Button
-                type="button"
-                variant='neutral'
-                className="w-1/2 gap-2"
-                onClick={() => window.location.href = process.env.NEXT_PUBLIC_SHEETS_URL || "https://bit.ly/pocket-tracker-sheet"}
-              >
-                <SheetsIcon />
-                Sheets
-              </Button>
-              <Button
-                type="button"
-                variant='neutral'
-                className="w-1/2 gap-2"
-                onClick={() => window.location.href = process.env.NEXT_PUBLIC_DASHBOARD_URL || "https://bit.ly/pocket-tracker-dashboard"}
-              >
-                <DashboardIcon />
-                Dashboard
-              </Button>
-            </div>
+              <SheetsIcon />
+              Sheets
+            </Button>
+            <Button
+              type="button"
+              variant='outline'
+              className="w-full gap-2 h-12 rounded-xl bg-secondary/50 hover:bg-secondary border-transparent text-secondary-foreground"
+              onClick={() => window.location.href = process.env.NEXT_PUBLIC_DASHBOARD_URL || "https://bit.ly/pocket-tracker-dashboard"}
+            >
+              <DashboardIcon />
+              Dashboard
+            </Button>
           </div>
+
         </div>
-      </div>
-      <div className="fixed bottom-0 left-0 right-0 py-1 text-center text-xs bg-background">
       </div>
     </div>
   );

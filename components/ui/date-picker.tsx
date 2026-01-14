@@ -22,11 +22,11 @@ interface DatePickerProps {
   icon?: React.ReactNode;
 }
 
-export default function DatePicker({ 
-  date, 
-  setDate, 
-  triggerClassName, 
-  icon = <CalendarIcon className="h-4 w-4" /> 
+export default function DatePicker({
+  date,
+  setDate,
+  triggerClassName,
+  icon = <CalendarIcon className="h-4 w-4" />
 }: DatePickerProps) {
   const selectedDate = date ? new Date(date) : undefined;
 
@@ -40,21 +40,22 @@ export default function DatePicker({
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="noShadow"
+          variant="outline"
           className={cn(
-            triggerClassName || "w-[280px] justify-start text-left font-base",
+            "w-[280px] justify-start text-left font-normal",
             !date && "text-muted-foreground",
+            triggerClassName
           )}
         >
           {icon}
           {date && !triggerClassName ? (
             <span className="ml-2">{format(new Date(date), "PPP")}</span>
           ) : !triggerClassName ? (
-            <span className="text-mtext ml-2">Pick a date</span>
+            <span className="ml-2">Pick a date</span>
           ) : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto !border-0 p-0">
+      <PopoverContent className="w-auto p-0 bg-white dark:bg-zinc-950 rounded-2xl border-none shadow-xl" align="start">
         <Calendar
           mode="single"
           selected={selectedDate}
