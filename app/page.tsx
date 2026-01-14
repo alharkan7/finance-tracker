@@ -205,7 +205,7 @@ export default function FinanceTrackerPage() {
         <div className="space-y-6">
 
           <header className="flex flex-col items-center justify-center space-y-2 mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">
               Finance Tracker
             </h1>
             {/* <p className="text-sm text-muted-foreground">
@@ -220,10 +220,10 @@ export default function FinanceTrackerPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 className={`w-full p-3 rounded-lg text-sm font-medium text-center shadow-sm ${feedbackMessage.toLowerCase().includes('saved')
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : feedbackMessage.includes('Submitting')
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : feedbackMessage.includes('Submitting')
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                   }`}
               >
                 {feedbackMessage}
