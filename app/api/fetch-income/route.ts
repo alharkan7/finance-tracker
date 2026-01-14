@@ -28,10 +28,10 @@ export async function GET() {
       }, { status: 500 });
     }
 
-    console.log('✅ Environment variables validated');
-    console.log(`📧 Client Email: ${process.env.GOOGLE_CLIENT_EMAIL}`);
-    console.log(`📄 Sheet ID: ${process.env.GOOGLE_SHEETS_ID}`);
-    console.log(`🔑 Private Key length: ${process.env.GOOGLE_PRIVATE_KEY.length} characters`);
+    // console.log('✅ Environment variables validated');
+    // console.log(`📧 Client Email: ${process.env.GOOGLE_CLIENT_EMAIL}`);
+    // console.log(`📄 Sheet ID: ${process.env.GOOGLE_SHEETS_ID}`);
+    // console.log(`🔑 Private Key length: ${process.env.GOOGLE_PRIVATE_KEY.length} characters`);
 
     const auth = new google.auth.GoogleAuth({
       credentials: {
@@ -41,22 +41,22 @@ export async function GET() {
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
-    console.log('🔐 GoogleAuth created successfully');
+    // console.log('🔐 GoogleAuth created successfully');
 
     const sheets = google.sheets({ version: 'v4', auth });
-    console.log('📊 Sheets API client initialized');
+    // console.log('📊 Sheets API client initialized');
 
     const sheetId = process.env.GOOGLE_SHEETS_ID;
     const range = 'Incomes!A:F'; // Fetch all columns for income
 
-    console.log(`🔍 Fetching data from sheet: ${sheetId}, range: ${range}`);
+    // console.log(`🔍 Fetching data from sheet: ${sheetId}, range: ${range}`);
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
       range,
     });
 
-    console.log(`✅ Data fetched successfully. Rows: ${response.data.values?.length || 0}`);
+    // console.log(`✅ Data fetched successfully. Rows: ${response.data.values?.length || 0}`);
 
     const rows = response.data.values || [];
 
@@ -71,7 +71,7 @@ export async function GET() {
       description: row[5] || '', // Column F: Description
     }));
 
-    console.log(`📦 Returning ${incomes.length} income records`);
+    // console.log(`📦 Returning ${incomes.length} income records`);
 
     return NextResponse.json({ incomes }, { status: 200 });
   } catch (error) {

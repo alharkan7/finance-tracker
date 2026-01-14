@@ -30,15 +30,26 @@ interface IncomeData {
 }
 
 export default function FinanceTrackerPage() {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [subjectValue, setSubjectValue] = useState('');
-  const [amountValue, setAmountValue] = useState('');
-  const [categoryValue, setCategoryValue] = useState('');
-  const [descriptionValue, setDescriptionValue] = useState('');
-  const [reimburseValue, setReimburseValue] = useState('FALSE');
+  // Expense form state
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [expenseSubject, setExpenseSubject] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('');
+  const [expenseDescription, setExpenseDescription] = useState('');
+  const [expenseReimburse, setExpenseReimburse] = useState('FALSE');
+  const [expenseShowValidation, setExpenseShowValidation] = useState(false);
+
+  // Income form state
+  const [incomeDate, setIncomeDate] = useState(new Date().toISOString().split('T')[0]);
+  const [incomeSubject, setIncomeSubject] = useState('');
+  const [incomeAmount, setIncomeAmount] = useState('');
+  const [incomeCategory, setIncomeCategory] = useState('');
+  const [incomeDescription, setIncomeDescription] = useState('');
+  const [incomeShowValidation, setIncomeShowValidation] = useState(false);
+
+  // Shared state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [showValidation, setShowValidation] = useState(false);
   const [activeTab, setActiveTab] = useState('expense');
 
   // Report data state
@@ -102,11 +113,21 @@ export default function FinanceTrackerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Get current form values based on active tab
+    const isExpense = activeTab === 'expense';
+    const date = isExpense ? expenseDate : incomeDate;
+    const subjectValue = isExpense ? expenseSubject : incomeSubject;
+    const amountValue = isExpense ? expenseAmount : incomeAmount;
+    const categoryValue = isExpense ? expenseCategory : incomeCategory;
+    const descriptionValue = isExpense ? expenseDescription : incomeDescription;
+    const reimburseValue = isExpense ? expenseReimburse : 'FALSE';
+    const setShowValidation = isExpense ? setExpenseShowValidation : setIncomeShowValidation;
+
     setShowValidation(true);
 
     // Validate required fields
     if (!subjectValue || !categoryValue) {
-      // setFeedbackMessage('Please fill in all required fields');
       setTimeout(() => {
         setFeedbackMessage('');
       }, 3000);
@@ -142,15 +163,24 @@ export default function FinanceTrackerPage() {
         throw new Error(`Failed to submit ${activeTab}`);
       }
 
-      // Reset form
-      setDate(new Date().toISOString().split('T')[0]);
-      setSubjectValue('');
-      setAmountValue('');
-      setCategoryValue('');
-      setDescriptionValue('');
-      setReimburseValue('FALSE');
-      setShowValidation(false);
-      setFeedbackMessage(`${activeTab === 'expense' ? 'Expense' : 'Income'} Submitted Successfully!`);
+      // Reset form for the active tab
+      if (isExpense) {
+        setExpenseDate(new Date().toISOString().split('T')[0]);
+        setExpenseSubject('');
+        setExpenseAmount('');
+        setExpenseCategory('');
+        setExpenseDescription('');
+        setExpenseReimburse('FALSE');
+        setExpenseShowValidation(false);
+      } else {
+        setIncomeDate(new Date().toISOString().split('T')[0]);
+        setIncomeSubject('');
+        setIncomeAmount('');
+        setIncomeCategory('');
+        setIncomeDescription('');
+        setIncomeShowValidation(false);
+      }
+      setFeedbackMessage(`${isExpense ? 'Expense' : 'Income'} Submitted Successfully!`);
 
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -171,7 +201,7 @@ export default function FinanceTrackerPage() {
 
   return (
     <div className="h-[100vh] flex flex-col items-center justify-center">
-        <div className="w-full max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 py-2 px-4">
+      <div className="w-full max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted/20 hover:scrollbar-thumb-muted/40 py-2 px-4">
         <div className="max-w-sm mx-auto relative bg-card py-6 px-0 rounded-sm">
 
           <div className="text-center py-6 items-center">
@@ -195,17 +225,7 @@ export default function FinanceTrackerPage() {
               className="w-full"
               onValueChange={(value: string) => {
                 setActiveTab(value);
-                if (value !== 'report') {
-                  setDate(new Date().toISOString().split('T')[0]);
-                  setSubjectValue('');
-                  setAmountValue('');
-                  setCategoryValue('');
-                  setDescriptionValue('');
-                  if (value === 'expense') {
-                    setReimburseValue('FALSE');
-                  }
-                  setShowValidation(false);
-                }
+                // Don't clear form data when switching tabs - preserve user input
               }}
             >
               <TabsList className="grid w-full grid-cols-3 bg-bg text-text">
@@ -239,21 +259,21 @@ export default function FinanceTrackerPage() {
                     className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
                   >
                     <FormExpenses
-                      date={date}
-                      setDate={setDate}
-                      subjectValue={subjectValue}
-                      setSubjectValue={setSubjectValue}
-                      amountValue={amountValue}
-                      setAmountValue={setAmountValue}
-                      categoryValue={categoryValue}
-                      setCategoryValue={setCategoryValue}
-                      descriptionValue={descriptionValue}
-                      setDescriptionValue={setDescriptionValue}
-                      reimburseValue={reimburseValue}
-                      setReimburseValue={setReimburseValue}
+                      date={expenseDate}
+                      setDate={setExpenseDate}
+                      subjectValue={expenseSubject}
+                      setSubjectValue={setExpenseSubject}
+                      amountValue={expenseAmount}
+                      setAmountValue={setExpenseAmount}
+                      categoryValue={expenseCategory}
+                      setCategoryValue={setExpenseCategory}
+                      descriptionValue={expenseDescription}
+                      setDescriptionValue={setExpenseDescription}
+                      reimburseValue={expenseReimburse}
+                      setReimburseValue={setExpenseReimburse}
                       isSubmitting={isSubmitting}
                       handleSubmit={handleSubmit}
-                      showValidation={showValidation}
+                      showValidation={expenseShowValidation}
                     />
                   </motion.div>
                 </TabsContent>
@@ -267,19 +287,19 @@ export default function FinanceTrackerPage() {
                     className="rounded-lg shadow-shadow border-2 border-border text-mtext p-0"
                   >
                     <FormIncome
-                      date={date}
-                      setDate={setDate}
-                      subjectValue={subjectValue}
-                      setSubjectValue={setSubjectValue}
-                      amountValue={amountValue}
-                      setAmountValue={setAmountValue}
-                      categoryValue={categoryValue}
-                      setCategoryValue={setCategoryValue}
-                      descriptionValue={descriptionValue}
-                      setDescriptionValue={setDescriptionValue}
+                      date={incomeDate}
+                      setDate={setIncomeDate}
+                      subjectValue={incomeSubject}
+                      setSubjectValue={setIncomeSubject}
+                      amountValue={incomeAmount}
+                      setAmountValue={setIncomeAmount}
+                      categoryValue={incomeCategory}
+                      setCategoryValue={setIncomeCategory}
+                      descriptionValue={incomeDescription}
+                      setDescriptionValue={setIncomeDescription}
                       isSubmitting={isSubmitting}
                       handleSubmit={handleSubmit}
-                      showValidation={showValidation}
+                      showValidation={incomeShowValidation}
                     />
                   </motion.div>
                 </TabsContent>

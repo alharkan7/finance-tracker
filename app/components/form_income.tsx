@@ -3,10 +3,12 @@
 import React from 'react';
 import { categoriesIncome, subjectsIncome } from '@/lib/selections';
 import { useMathInput } from '@/lib/math-utils';
+import { useVoiceInput } from '@/lib/useVoiceInput';
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import DatePicker from "@/components/ui/date-picker"
+import { VoiceInputButton } from './voice_input_button';
 import { User2, Calendar } from 'lucide-react';
 
 function formatDropdownText(text: string) {
@@ -64,6 +66,43 @@ export function FormIncome({
   showValidation,
   handleSubmit,
 }: FormIncomeProps) {
+  const { state: voiceState, startListening, stopListening, reset: resetVoice } = useVoiceInput({
+    formType: 'income',
+    onResult: ({ structured }) => {
+      // Auto-fill form fields from structured data
+      if (structured.amount !== undefined) {
+        setAmountValue(structured.amount.toString());
+      }
+      if (structured.subject) {
+        setSubjectValue(structured.subject);
+      }
+      if (structured.category) {
+        setCategoryValue(structured.category);
+      }
+      if (structured.date) {
+        setDate(structured.date);
+      }
+      if (structured.description) {
+        setDescriptionValue(structured.description);
+      }
+    },
+    onError: (error) => {
+      console.error('Voice input error:', error);
+    },
+    silenceTimeout: 2000,
+  });
+
+  const handleVoiceClick = () => {
+    if (voiceState === 'listening') {
+      // User clicked while listening - stop and process
+      stopListening();
+      return;
+    }
+    if (voiceState === 'error') {
+      resetVoice();
+    }
+    startListening();
+  };
   const { displayValue, handleAmountChange } = useMathInput(amountValue, setAmountValue);
 
   return (
@@ -177,9 +216,16 @@ export function FormIncome({
         />
       </div>
 
-      <Button className="w-full mt-8" variant="default" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Save' : 'Save'}
-      </Button>
+      <div className="flex gap-2 mt-8">
+        <Button className="flex-1" variant="default" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : 'Save'}
+        </Button>
+        <VoiceInputButton
+          state={voiceState}
+          onClick={handleVoiceClick}
+          disabled={isSubmitting}
+        />
+      </div>
     </form>
   );
 }
