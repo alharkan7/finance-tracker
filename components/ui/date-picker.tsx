@@ -36,6 +36,9 @@ export default function DatePicker({
     }
   };
 
+  // Get day number from selected date
+  const dayNumber = selectedDate ? selectedDate.getDate() : null;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -47,7 +50,12 @@ export default function DatePicker({
             triggerClassName
           )}
         >
-          {icon}
+          {/* Show day number when date is selected and using custom trigger, otherwise show icon */}
+          {date && triggerClassName ? (
+            <span className="text-xl font-bold">{dayNumber}</span>
+          ) : (
+            icon
+          )}
           {date && !triggerClassName ? (
             <span className="ml-2">{format(new Date(date), "PPP")}</span>
           ) : !triggerClassName ? (

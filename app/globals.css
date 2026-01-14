@@ -97,6 +97,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground tracking-normal;
+    @apply bg-background text-foreground tracking-normal font-sans;
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   }
 }

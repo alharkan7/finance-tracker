@@ -6,6 +6,11 @@ interface Category {
     label: string;
 }
 
+interface Subject {
+    value: string;
+    icon: LucideIcon;
+    label: string;
+}
 
 import {
     Utensils,
@@ -18,6 +23,7 @@ import {
     Tv,
     Gift,
     Users,
+    UsersRound,
     Heart,
     DollarSign,
     FileText,
@@ -27,7 +33,12 @@ import {
     Banknote,
     PenLine,
     BriefcaseBusiness,
-    Landmark
+    Landmark,
+    User,
+    UserRound,
+    UserCheck,
+    UserRoundCheck,
+    Handshake
 } from "lucide-react"
 
 
@@ -58,27 +69,17 @@ export const categoriesIncome: Category[] = [
     { value: '🎲 Others', icon: Dices, label: 'Others' },
 ] as const;
 
-interface Subject {
-    value: string;
-    label: string;
-}
-
 export const subjects: Subject[] = [
-    { value: 'Al (Personal)', label: 'Al (Personal)' },
-    { value: 'Nurin (Personal)', label: 'Nurin (Personal)' },
-    { value: 'Al (Family)', label: 'Al (Family)' },
-    { value: 'Nurin (Family)', label: 'Nurin (Family)' },
-    { value: 'Al (Lainnya)', label: 'Al (Lainnya)' },
-    { value: 'Nurin (Lainnya)', label: 'Nurin (Lainnya)' },
-    { value: 'Al & Nurin', label: 'Al & Nurin' },
+    { value: 'Al (Personal)', icon: User, label: 'Al (Personal)' },
+    { value: 'Nurin (Personal)', icon: UserRound, label: 'Nurin (Personal)' },
+    { value: 'Al (Family)', icon: Users, label: 'Al (Family)' },
+    { value: 'Nurin (Family)', icon: UsersRound, label: 'Nurin (Family)' },
+    { value: 'Al (Lainnya)', icon: UserCheck, label: 'Al (Lainnya)' },
+    { value: 'Nurin (Lainnya)', icon: UserRoundCheck, label: 'Nurin (Lainnya)' },
+    { value: 'Al & Nurin', icon: Handshake, label: 'Al & Nurin' },
 ] as const;
 
-interface SubjectIncome {
-    value: string;
-    label: string;
-}
-
-export const subjectsIncome: SubjectIncome[] = [
-    { value: 'Al', label: 'Al' },
-    { value: 'Nurin', label: 'Nurin' },
+export const subjectsIncome: Subject[] = [
+    { value: 'Al', icon: User, label: 'Al' },
+    { value: 'Nurin', icon: UserRound, label: 'Nurin' },
 ] as const;

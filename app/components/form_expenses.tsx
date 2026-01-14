@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import DatePicker from "@/components/ui/date-picker"
 import { VoiceInputButton } from './voice_input_button';
-import { User2, Check, X, Calendar } from 'lucide-react';
+import { Check, X, Calendar, User } from 'lucide-react';
 
 function formatDropdownText(text: string) {
   return <span className="font-medium">{text}</span>
@@ -122,17 +122,26 @@ export function FormExpenses({
           >
             <SelectTrigger
               id="subject"
-              className={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all hover:scale-105 active:scale-95 [&>svg:last-child]:hidden ${showValidation && !subjectValue ? 'ring-2 ring-destructive bg-destructive/10' :
+              className={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all [&>svg:last-child]:hidden ${showValidation && !subjectValue ? 'ring-2 ring-destructive bg-destructive/10' :
                 subjectValue ? 'bg-primary/10 text-primary ring-2 ring-primary/20' : 'bg-secondary text-secondary-foreground'
                 }`}
             >
-              <User2 className="h-6 w-6" />
+              {subjectValue ? (
+                React.createElement(subjects.find(sub => sub.value === subjectValue)?.icon || User, {
+                  className: "h-6 w-6"
+                })
+              ) : (
+                <User className="h-6 w-6" />
+              )}
               <span className="sr-only"><SelectValue /></span>
             </SelectTrigger>
             <SelectContent>
               {subjects.map((subject) => (
                 <SelectItem key={subject.value} value={subject.value}>
-                  {formatDropdownText(subject.label)}
+                  <div className="flex items-center">
+                    <subject.icon className="mr-2 h-4 w-4" />
+                    {formatDropdownText(subject.label)}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -148,7 +157,7 @@ export function FormExpenses({
           >
             <SelectTrigger
               id="category"
-              className={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all hover:scale-105 active:scale-95 [&>svg:last-child]:hidden ${showValidation && !categoryValue ? 'ring-2 ring-destructive bg-destructive/10' :
+              className={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all [&>svg:last-child]:hidden ${showValidation && !categoryValue ? 'ring-2 ring-destructive bg-destructive/10' :
                 categoryValue ? 'bg-primary/10 text-primary ring-2 ring-primary/20' : 'bg-secondary text-secondary-foreground'
                 }`}
             >
@@ -179,7 +188,7 @@ export function FormExpenses({
           <DatePicker
             date={date}
             setDate={setDate}
-            triggerClassName={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all hover:scale-105 active:scale-95 ${date ? 'bg-primary/10 text-primary ring-2 ring-primary/20' : 'bg-secondary text-secondary-foreground'
+            triggerClassName={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all ${date ? 'bg-primary/10 text-primary ring-2 ring-primary/20' : 'bg-secondary text-secondary-foreground'
               }`}
             icon={<Calendar className="h-6 w-6 flex-shrink-0" />}
           />
@@ -194,7 +203,7 @@ export function FormExpenses({
           >
             <SelectTrigger
               id="reimbursed"
-              className={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all hover:scale-105 active:scale-95 [&>svg:last-child]:hidden ${reimburseValue === 'TRUE' ? 'bg-green-100 text-green-700 ring-2 ring-green-200' : 'bg-secondary text-secondary-foreground'
+              className={`w-14 h-14 p-0 flex items-center justify-center rounded-2xl border-0 shadow-sm transition-all [&>svg:last-child]:hidden ${reimburseValue === 'TRUE' ? 'bg-green-100 text-green-700 ring-2 ring-green-200' : 'bg-secondary text-secondary-foreground'
                 }`}
             >
               {reimburseValue === 'TRUE' ? (
@@ -207,7 +216,7 @@ export function FormExpenses({
             <SelectContent>
               <SelectItem value="TRUE">
                 <div className="flex items-center">
-                  <span className="text-green-600 font-medium">Yes</span>
+                  <span className="font-medium">Yes</span>
                 </div>
               </SelectItem>
               <SelectItem value="FALSE">
